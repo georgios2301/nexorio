@@ -20,7 +20,7 @@ services:
     autoDeploy: true
 
   # Static Site for Frontend
-  - type: static
+  - type: web
     name: nexorio-frontend
     buildCommand: "echo 'No build needed'"
     staticPublishPath: ./Lieferschein/Programm
