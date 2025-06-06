@@ -1,7 +1,7 @@
 services:
   # Backend Web Service
   - type: web
-    name: dzmetall-backend
+    name: nexorio-backend
     runtime: python
     buildCommand: "./build.sh"
     startCommand: "python start_services.py"
@@ -21,7 +21,7 @@ services:
 
   # Static Site for Frontend
   - type: static
-    name: dzmetall-frontend
+    name: nexorio-frontend
     buildCommand: "echo 'No build needed'"
     staticPublishPath: ./Lieferschein/Programm
     headers:

@@ -1,6 +1,6 @@
 # Deployment auf Render.com
 
-Diese Anleitung erklärt, wie Sie das DZMetall Lieferschein System auf Render.com deployen.
+Diese Anleitung erklärt, wie Sie das Nexorio System auf Render.com deployen.
 
 ## Voraussetzungen
 
@@ -17,7 +17,7 @@ Diese Anleitung erklärt, wie Sie das DZMetall Lieferschein System auf Render.co
 git init
 git add .
 git commit -m "Initial commit for DZMetall Lieferschein System"
-git remote add origin https://github.com/IHR-USERNAME/dzmetall-lieferschein.git
+git remote add origin https://github.com/IHR-USERNAME/nexorio.git
 git push -u origin main
 ```
 
@@ -48,11 +48,11 @@ Fügen Sie folgende Umgebungsvariablen in Render hinzu:
 
 Nach dem Deployment:
 
-1. Kopieren Sie die Backend-URL von Render (z.B. https://dzmetall-backend.onrender.com)
+1. Kopieren Sie die Backend-URL von Render (z.B. https://nexorio-backend.onrender.com)
 2. Aktualisieren Sie die `index.html` Datei:
    ```javascript
    // Ändern Sie die Backend-URL
-   const BACKEND_URL = 'https://dzmetall-backend.onrender.com';
+   const BACKEND_URL = 'https://nexorio-backend.onrender.com';
    ```
 3. Deployen Sie das Frontend als Static Site auf Render
 
