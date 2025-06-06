@@ -25,6 +25,14 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Security - NEVER commit these!
+CREDENTIALS
+credentials.*
+secrets.*
+*.key
+*.pem
+*_api_key*
+
 # IDE
 .vscode/
 .idea/

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lieferschein Verarbeitung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00d4aa',
+                        secondary: '#0084ff',
+                        dark: {
+                            900: '#1a1a1a',
+                            800: '#2d2d2d',
+                            700: '#3d3d3d',
+                            600: '#4d4d4d'
+                        }
+                    },
+                    borderRadius: {
+                        'xl': '12px',
+                        'lg': '10px'
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.3)',
+                        'glow': '0 0 15px rgba(0, 212, 170, 0.5)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/css">
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            min-width: 1200px;
+            overflow-x: auto;
+        }
+        
+        .glassmorphism {
+            background: rgba(45, 45, 45, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .document-dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .document-dropzone.active {
+            border: 2px dashed #00d4aa;
+            background-color: rgba(0, 212, 170, 0.05);
+        }
+        
+        .data-field {
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+        
+        .data-field:hover {
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.3);
+        }
+        
+        .action-button {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .action-button:hover::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(255,255,255,0.13), rgba(255,255,255,0.01));
+            pointer-events: none;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #00d4aa, #0084ff);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: rgba(255, 200, 0, 0.15);
+            color: #ffc800;
+        }
+        
+        .status-completed {
+            background-color: rgba(0, 212, 170, 0.15);
+            color: #00d4aa;
+        }
+        
+        .status-error {
+            background-color: rgba(255, 50, 50, 0.15);
+            color: #ff3232;
+        }
+    </style>
+</head>
+<body class="h-screen flex">
+    <!-- Sidebar -->
+    <div class="glassmorphism h-full w-64 p-6 flex flex-col">
+        <!-- Logo -->
+        <div class="mb-10 flex items-center">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-white">LogiScan Pro</h1>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="flex flex-col space-y-2">
+            <a href="#" class="flex items-center space-x-3 py-3 px-4 rounded-xl bg-dark-700 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 py-3 px-4 rounded-xl text-gray-300 hover:bg-dark-700 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 16a3.989 3.989 0 01-2.667-1.07 1 1 0 01-.285-1.049l1.715-5.349L11 6.477V5H9v1.477l-3.307 1.478-1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 16a3.989 3.989 0 01-2.667-1.07 1 1 0 01-.285-1.049l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1zm-5 8.274a1 1 0 10-2 0 1 1 0 002 0zm9 0a1 1 0 10-2 0 1 1 0 002 0z" clip-rule="evenodd" />
+                </svg>
+                <span>Verlauf</span>
+            </a>
+            <a href="#" class="flex items-center space-x-3 py-3 px-4 rounded-xl text-gray-300 hover:bg-dark-700 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                </svg>
+                <span>Einstellungen</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto">
+            <button class="w-full py-3 px-4 flex items-center justify-center space-x-3 rounded-xl text-center bg-gradient-to-r from-primary to-secondary text-white font-medium hover:from-secondary hover:to-primary transition-all transform hover:-translate-y-0.5 duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                <span>Dokument scannen</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="glassmorphism h-20 flex items-center justify-between px-8 py-4">
+            <div>
+                <h2 class="text-xl font-bold">Lieferschein Verarbeitung</h2>
+                <p class="text-gray-400 text-sm">Heute: 05. Juni 2023</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-gradient-to-br from-primary to-secondary w-10 h-10 rounded-full flex items-center justify-center">
+                        <span class="font-medium text-white">MF</span>
+                    </div>
+                    <div>
+                        <p class="font-medium">Max Fischer</p>
+                        <p class="text-gray-400 text-xs">Administrator</p>
+                    </div>
+                </div>
+                <button class="p-2 rounded-lg hover:bg-dark-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Section -->
+        <main class="flex-1 overflow-auto p-8 bg-dark-900">
+            <div class="max-w-6xl mx-auto">
+                <!-- Scan Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Scan Card -->
+                    <div class="glassmorphism rounded-xl overflow-hidden">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-4">Dokument verarbeiten</h3>
+                            <div class="document-dropzone rounded-lg p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors hover:border-primary hover:bg-gray-900">
+                                <div class="w-12 h-12 rounded-lg bg-dark-700 mb-4 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                </div>
+                                <p class="text-lg font-medium">Dokument hier ablegen</p>
+                                <p class="text-gray-400 text-sm mt-2">PNG, JPG oder PDF Datei (max. 5MB)</p>
+                                <button class="mt-6 px-4 py-2 rounded-lg bg-dark-700 text-white text-sm font-medium hover:bg-dark-600 transition-colors">Datei auswählen</button>
+                            </div>
+                            <div class="progress-bar mt-4">
+                                <div class="progress-fill"></div>
+                            </div>
+                            <div id="progress-text" class="text-xs text-right mt-2 text-gray-400 opacity-0 transition-opacity">Verarbeitung läuft...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Card -->
+                    <div class="glassmorphism rounded-xl overflow-hidden">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold">Erkannte Daten</h3>
+                                <button class="p-2 rounded-lg hover:bg-dark-700 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div class="flex mb-6">
+                                <div class="w-16 h-16 rounded-lg bg-dark-700 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-medium">Lieferschein_LF-062023_42.pdf</p>
+                                    <p class="text-gray-400 text-sm">Größe: 1.2 MB • Hinzugefügt: heute</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="data-field bg-dark-800 rounded-lg p-4">
+                                    <p class="text-gray-400 text-xs mb-1">Kundennummer</p>
+                                    <p class="font-medium">K-2023-00842</p>
+                                </div>
+                                
+                                <div class="data-field bg-dark-800 rounded-lg p-4">
+                                    <p class="text-gray-400 text-xs mb-1">Lieferdatum</p>
+                                    <p class="font-medium">07. Juni 2023</p>
+                                </div>
+                                
+                                <div class="data-field bg-dark-800 rounded-lg p-4">
+                                    <p class="text-gray-400 text-xs mb-1">Referenznummer</p>
+                                    <p class="font-medium">LF-2023-062</p>
+                                </div>
+                                
+                                <div class="data-field bg-dark-800 rounded-lg p-4">
+                                    <p class="text-gray-400 text-xs mb-1">Artikelpositionen</p>
+                                    <p class="font-medium">8 Positionen</p>
+                                </div>
+                            </div>
+                            
+                            <button class="w-full mt-6 py-3 px-4 flex items-center justify-center space-x-3 rounded-xl text-center bg-gradient-to-r from-primary to-secondary text-white font-medium hover:from-secondary hover:to-primary transition-all transform hover:-translate-y-0.5 duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <span>Daten bestätigen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Section -->
+                <div class="mt-8">
+                    <h2 class="text-2xl font-bold mb-6">Dokumententyp auswählen</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Action Button 1 -->
+                        <div class="action-button bg-dark-800 rounded-xl overflow-hidden group">
+                            <div class="p-6 flex flex-col items-center">
+                                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-semibold">Lieferschein</h3>
+                                <p class="text-gray-400 mt-2 text-center">Verarbeite Lieferscheine und erfasse alle relevanten Daten</p>
+                                <div class="mt-4 flex items-center">
+                                    <span class="status-badge status-completed mr-2">Aktiv</span>
+                                    <span class="text-sm text-gray-400">15 bearbeitet</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Button 2 -->
+                        <div class="action-button bg-dark-800 rounded-xl overflow-hidden group">
+                            <div class="p-6 flex flex-col items-center">
+                                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-secondary to-blue-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-semibold">Rechnung</h3>
+                                <p class="text-gray-400 mt-2 text-center">Rechnungen automatisch verarbeiten und buchen</p>
+                                <div class="mt-4 flex items-center">
+                                    <span class="status-badge status-pending mr-2">In Bearb.</span>
+                                    <span class="text-sm text-gray-400">7 in Warteschlange</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Button 3 -->
+                        <div class="action-button bg-dark-800 rounded-xl overflow-hidden group">
+                            <div class="p-6 flex flex-col items-center">
+                                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-semibold">Laufkarte</h3>
+                                <p class="text-gray-400 mt-2 text-center">Laufkarten für die Produktion erfassen und verwalten</p>
+                                <div class="mt-4 flex items-center">
+                                    <span class="status-badge status-error mr-2">Fehler</span>
+                                    <span class="text-sm text-gray-400">2 unbehandelt</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Dropzone interactions
+        const dropzone = document.querySelector('.document-dropzone');
+        const progressFill = document.querySelector('.progress-fill');
+        const progressText = document.getElementById('progress-text');
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('active');
+        });
+        
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('active');
+        });
+        
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('active');
+            
+            // Simulate document processing
+            progressFill.style.width = '0%';
+            progressText.style.opacity = '1';
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                progressFill.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        progressText.style.opacity = '0';
+                    }, 1000);
+                }
+            }, 50);
+        });
+        
+        // Action button micro-interactions
+        const actionButtons = document.querySelectorAll('.action-button');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                button.classList.add('ring-2', 'ring-primary');
+                setTimeout(() => {
+                    button.classList.remove('ring-2', 'ring-primary');
+                }, 300);
+            });
+        });
+        
+        // Data field interactions
+        const dataFields = document.querySelectorAll('.data-field');
+        dataFields.forEach(field => {
+            field.addEventListener('click', () => {
+                field.classList.add('ring-2', 'ring-primary');
+                setTimeout(() => {
+                    field.classList.remove('ring-2', 'ring-primary');
+                }, 300);
+                
+                // In a real app, would open an editing interface
+                console.log('Data field clicked');
+            });
+        });
+    </script>
+</body>
+</html>
