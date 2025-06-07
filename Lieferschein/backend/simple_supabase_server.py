@@ -20,9 +20,20 @@ import sys
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 # Add paths for PDF generation imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '../Programm'))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+sys.path.insert(0, os.path.join(current_dir, '..'))
+sys.path.insert(0, os.path.join(current_dir, '../Vorlagen'))
+sys.path.insert(0, os.path.join(current_dir, '../Programm'))
+
+# Debug: Print current directory and sys.path
+print(f"Current directory: {current_dir}")
+print(f"Python path: {sys.path[:5]}...")
+print(f"Files in current dir: {os.listdir(current_dir) if os.path.exists(current_dir) else 'N/A'}")
+parent_dir = os.path.join(current_dir, '..')
+print(f"Files in parent dir: {os.listdir(parent_dir) if os.path.exists(parent_dir) else 'N/A'}")
+vorlagen_dir = os.path.join(current_dir, '../Vorlagen')
+print(f"Files in Vorlagen dir: {os.listdir(vorlagen_dir) if os.path.exists(vorlagen_dir) else 'N/A'}")
 
 # Supabase configuration - MUST be set as environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -476,16 +487,29 @@ async def generate_pdf(request: Request):
     try:
         # Try to import PDF generation functions
         try:
-            # Production - files in root
+            # First try direct import
             from lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
             from lieferschein_counter import get_current_number
-        except ImportError:
+            print("Successfully imported PDF modules (direct)")
+        except ImportError as e1:
+            print(f"Direct import failed: {e1}")
             try:
-                # Development - files in Vorlagen
+                # Try import from Vorlagen
                 from Vorlagen.lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
                 from Vorlagen.lieferschein_counter import get_current_number
-            except ImportError as e:
-                print(f"Failed to import PDF generation modules: {e}")
+                print("Successfully imported PDF modules (from Vorlagen)")
+            except ImportError as e2:
+                print(f"Vorlagen import failed: {e2}")
+                # List available files for debugging
+                current = os.path.dirname(os.path.abspath(__file__))
+                print(f"Current directory: {current}")
+                print(f"Files in current: {os.listdir(current) if os.path.exists(current) else 'N/A'}")
+                parent = os.path.join(current, '..')
+                print(f"Files in parent: {os.listdir(parent) if os.path.exists(parent) else 'N/A'}")
+                vorlagen = os.path.join(parent, 'Vorlagen')
+                print(f"Vorlagen exists: {os.path.exists(vorlagen)}")
+                if os.path.exists(vorlagen):
+                    print(f"Files in Vorlagen: {os.listdir(vorlagen)}")
                 raise HTTPException(status_code=500, detail="PDF generation modules not available")
         
         # Parse request body
