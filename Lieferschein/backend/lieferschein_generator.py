@@ -420,10 +420,19 @@ def generate_laufkarte(data: Dict[str, Any]) -> str:
     """Generate Laufkarte PDF"""
     try:
         # Use direct PDF generation
-        from .laufkarte_pdf_generator import generate_laufkarte_direct
+        try:
+            # First try relative import (for local development)
+            from .laufkarte_pdf_generator import generate_laufkarte_direct
+        except ImportError:
+            # Then try absolute import (for Render deployment)
+            from laufkarte_pdf_generator import generate_laufkarte_direct
+        print("Using direct PDF generation for Laufkarte")
         return generate_laufkarte_direct(data)
     except Exception as e:
         print(f"Error generating Laufkarte PDF: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         # Fallback to overlay method
         template_path = os.path.join(os.path.dirname(__file__), 'laufkarte_template.pdf')
         output_path = tempfile.mktemp(suffix='_laufkarte.pdf')
