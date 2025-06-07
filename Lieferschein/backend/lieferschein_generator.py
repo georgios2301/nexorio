@@ -417,34 +417,16 @@ def generate_lieferschein(data: Dict[str, Any]) -> str:
     return output_path
 
 def generate_laufkarte(data: Dict[str, Any]) -> str:
-    """Generate Laufkarte PDF"""
+    """Generate Laufkarte PDF using direct generation only"""
     try:
-        # Use direct PDF generation
-        try:
-            # First try relative import (for local development)
-            from .laufkarte_pdf_generator import generate_laufkarte_direct
-        except ImportError:
-            # Then try absolute import (for Render deployment)
-            from laufkarte_pdf_generator import generate_laufkarte_direct
-        print("Using direct PDF generation for Laufkarte")
-        return generate_laufkarte_direct(data)
-    except Exception as e:
-        print(f"Error generating Laufkarte PDF: {e}")
-        print(f"Error type: {type(e).__name__}")
-        import traceback
-        traceback.print_exc()
-        # Fallback to overlay method
-        template_path = os.path.join(os.path.dirname(__file__), 'laufkarte_template.pdf')
-        output_path = tempfile.mktemp(suffix='_laufkarte.pdf')
-        
-        # Create template if it doesn't exist
-        if not os.path.exists(template_path):
-            create_blank_template(template_path, "LAUFKARTE")
-        
-        overlay_path = create_overlay(data, 'laufkarte')
-        merge_with_template(template_path, overlay_path, output_path)
-        
-        return output_path
+        # First try relative import (for local development)
+        from .laufkarte_pdf_generator import generate_laufkarte_direct
+    except ImportError:
+        # Then try absolute import (for Render deployment)
+        from laufkarte_pdf_generator import generate_laufkarte_direct
+    
+    print("Using direct PDF generation for Laufkarte")
+    return generate_laufkarte_direct(data)
 
 def generate_rechnung(data: Dict[str, Any]) -> str:
     """Generate Rechnung PDF"""
