@@ -1,0 +1,3 @@
+FORCE REBUILD AT: 2025-01-07 12:48:00
+This file forces Render to rebuild the application.
+DELETE THIS FILE AFTER SUCCESSFUL DEPLOYMENT!
