@@ -4,7 +4,8 @@
       "Bash(rm:*)",
       "Bash(touch:*)",
       "Bash(grep:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

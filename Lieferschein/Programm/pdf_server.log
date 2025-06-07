@@ -1,0 +1,35 @@
+ * Serving Flask app 'pdf_server'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:4000
+ * Running on http://192.168.2.108:4000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 267-282-968
+127.0.0.1 - - [06/Jun/2025 22:25:53] "[35m[1mPOST /generate-pdf HTTP/1.1[0m" 500 -
+127.0.0.1 - - [06/Jun/2025 22:27:59] "[35m[1mPOST /generate-pdf HTTP/1.1[0m" 500 -
+ * Detected change in '/Users/georgios/Desktop/testläufe/DZMetall/Lieferschein/Vorlagen/lieferschein_generator.py', reloading
+DEBUG: Loaded custom fields: {'datum': [482.832, 160.94400000000002, 66.88581818181818, 24.03709090909091]}
+DEBUG: Received data: {'bestellnummer': 'BL-TEST-2025', 'datum': '06.06.2025', 'lieferschein_nr': 'DZ2025-TEST', 'kunde': {'name': 'Musterfirma GmbH', 'adresse': 'Beispielstraße 123', 'plz': '12345', 'ort': 'Musterstadt'}, 'positionen': [{'pos_nr': '1', 'auftrag': 'FL-10001', 'beschreibung': 'Beispiel Metallbearbeitung - Fräsen und Drehen von Präzisionsteilen', 'vorgang': 'Fräsen CNC 5-Achsen', 'fv': 'F', 'menge': 25, 'werkstoff': 'AlMgSi1', 'modellnummer': 'MOD-2025-001', 'preis': 45.5}, {'pos_nr': '2', 'auftrag': 'FL-10002', 'beschreibung': 'Laserschneiden von Blechen', 'vorgang': 'Laserschnitt CO2', 'fv': 'V', 'menge': 100, 'werkstoff': 'S235JR', 'modellnummer': 'MOD-2025-002', 'preis': 12.0}, {'pos_nr': '3', 'auftrag': 'FL-10003', 'beschreibung': 'Oberflächenbehandlung - Pulverbeschichtung RAL 9005', 'vorgang': 'Pulverbeschichtung', 'fv': 'P', 'menge': 50, 'werkstoff': 'Stahl verzinkt', 'modellnummer': 'MOD-2025-003', 'preis': 8.75}]}
+DEBUG: Using fields configuration: {'datum': (482.832, 160.94400000000002)}
+DEBUG: Writing date '06.06.2025' at position (482.832, 160.94400000000002)
+Error generating PDF: 'positions_start'
+DEBUG: Loaded custom fields: {'datum': [482.832, 160.94400000000002, 66.88581818181818, 24.03709090909091]}
+DEBUG: Received data: {'bestellnummer': 'TEST-123', 'datum': '06.06.2025'}
+DEBUG: Using fields configuration: {'datum': (482.832, 160.94400000000002)}
+DEBUG: Writing date '06.06.2025' at position (482.832, 160.94400000000002)
+Error generating PDF: 'positions_start'
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 267-282-968
+ * Detected change in '/Users/georgios/Desktop/testläufe/DZMetall/Lieferschein/Vorlagen/lieferschein_generator.py', reloading
+ * Restarting with stat
+Traceback (most recent call last):
+  File "/Users/georgios/Desktop/testläufe/DZMetall/Lieferschein/Programm/pdf_server.py", line 12, in <module>
+    from Vorlagen.lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
+  File "/Users/georgios/Desktop/testläufe/DZMetall/Lieferschein/Programm/../Vorlagen/lieferschein_generator.py", line 168
+    if y < fields['positions_min_y']:
+    ^^
+IndentationError: expected an indented block after 'for' statement on line 166

@@ -9,7 +9,14 @@ import json
 
 # Add parent directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from Vorlagen.lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
+
+# Try to import from different locations depending on deployment
+try:
+    # Production (Render) - files are in root directory
+    from lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
+except ImportError:
+    # Development - files are in Vorlagen directory
+    from Vorlagen.lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
 
 app = Flask(__name__)
 CORS(app)
@@ -38,7 +45,10 @@ def generate_pdf():
         if doc_type == 'lieferschein':
             pdf_path = generate_lieferschein(doc_data)
             # Get the generated Lieferschein number from the counter
-            from Vorlagen.lieferschein_counter import get_current_number
+            try:
+                from lieferschein_counter import get_current_number
+            except ImportError:
+                from Vorlagen.lieferschein_counter import get_current_number
             document_number = f"DZ{datetime.now().year}-{get_current_number():04d}"
         elif doc_type == 'laufkarte':
             pdf_path = generate_laufkarte(doc_data)

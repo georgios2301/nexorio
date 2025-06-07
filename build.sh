@@ -58,9 +58,25 @@ else
     echo "907" > lieferschein_counter.txt
 fi
 
-# PDF templates
-if [ -f "Lieferschein/Vorlagen/ls2.pdf" ]; then
-    cp -r Lieferschein/Vorlagen/* Lieferschein/Vorlagen/ 2>/dev/null || true
+# Copy Vorlagen files (PDF templates and Python modules)
+echo "Copying Vorlagen files..."
+if [ -d "Lieferschein/Vorlagen" ]; then
+    # Copy Python modules
+    for file in Lieferschein/Vorlagen/*.py; do
+        if [ -f "$file" ]; then
+            cp "$file" .
+        fi
+    done
+    
+    # Copy PDF templates
+    for file in Lieferschein/Vorlagen/*.pdf; do
+        if [ -f "$file" ]; then
+            cp "$file" .
+        fi
+    done
+    
+    # Also keep the Vorlagen directory structure for any remaining files
+    cp -r Lieferschein/Vorlagen .
 fi
 
 # Install Python dependencies

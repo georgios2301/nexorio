@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laufkarte - DZ Metall</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0e0e0;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 5mm rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        
+        @media print {
+            body {
+                background-color: white;
+            }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .company {
+            float: left;
+            font-weight: bold;
+            font-size: 14pt;
+        }
+        
+        .date {
+            float: right;
+            font-size: 14pt;
+        }
+        
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
+        h1 {
+            text-align: center;
+            margin: 40px 0 30px 0;
+            text-decoration: underline;
+            font-size: 24pt;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 11pt;
+        }
+        
+        th, td {
+            border: 1px solid #333;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+        
+        .center {
+            text-align: center;
+        }
+        
+        .main-table {
+            margin-bottom: 40px;
+        }
+        
+        .signature-table {
+            position: absolute;
+            bottom: 20mm;
+            left: 20mm;
+            right: 20mm;
+            width: calc(100% - 40mm);
+        }
+        
+        .signature-table td {
+            height: 35px;
+            vertical-align: middle;
+        }
+        
+        /* Für kleinere Bildschirme */
+        @media screen and (max-width: 800px) {
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 20px;
+            }
+            .signature-table {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                width: 100%;
+                margin-top: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header clearfix">
+            <div class="company">DZ Metall</div>
+            <div class="date">02.06.2025</div>
+        </div>
+        
+        <h1>Laufkarte</h1>
+        
+        <table class="main-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Auftrag</th>
+                    <th style="width: 35%;">Bezeichnung</th>
+                    <th style="width: 5%;" class="center">FV</th>
+                    <th style="width: 10%;" class="center">Stk</th>
+                    <th style="width: 15%;">Werkstoff</th>
+                    <th style="width: 20%;">Modellnummer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1)FL250972</td>
+                    <td>LAUFRAD FH<br>Trennen/Pendeln/Putzen</td>
+                    <td class="center">1</td>
+                    <td class="center">1,4107</td>
+                    <td></td>
+                    <td>7 13359 00</td>
+                </tr>
+                <tr>
+                    <td>2)FL250940</td>
+                    <td>LAUFRAD G 458X55 KER<br>Trennen/Pendeln/Putzen</td>
+                    <td class="center">1</td>
+                    <td class="center">1,4027</td>
+                    <td></td>
+                    <td>7 12906 00</td>
+                </tr>
+                <tr>
+                    <td>3)FL242941</td>
+                    <td>LAUFRAD 295X13 KER<br>Trennen/Pendeln/Putzen</td>
+                    <td class="center">1</td>
+                    <td class="center">1,4024</td>
+                    <td></td>
+                    <td>610 40 455</td>
+                </tr>
+                <tr>
+                    <td>4)FL251172</td>
+                    <td>LEITRAD KER<br>Trennen/Pendeln/Putzen</td>
+                    <td class="center">3</td>
+                    <td class="center">1,4027</td>
+                    <td></td>
+                    <td>610 34 305A</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <table class="signature-table">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Bereich</th>
+                    <th style="width: 35%;">Personalnummer</th>
+                    <th style="width: 35%;">Unterschrift</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Brennen</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Trennen</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Pendeln</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Schleifen</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Putzen</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Reparatur</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Kontrolle</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
