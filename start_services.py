@@ -25,6 +25,7 @@ if os.path.exists(lieferschein_programm):
 
 def run_backend():
     """Run the FastAPI backend server"""
+    print("WARNING: run_backend() called - this should not happen on Render!")
     import uvicorn
     from simple_supabase_server import app
     
@@ -143,6 +144,7 @@ def main():
         # Add PDF generation endpoint
         @unified_app.post("/generate-pdf")
         async def generate_pdf(request: Request):
+            print("PDF generation endpoint called")
             body = await request.body()
             client = Client(pdf_app, Response)
             response = client.post(
@@ -166,10 +168,26 @@ def main():
             allow_headers=["*"],
         )
         
+        # List all registered routes
+        print("\nRegistered routes:")
+        for route in unified_app.routes:
+            if hasattr(route, 'path'):
+                print(f"  {route.methods if hasattr(route, 'methods') else 'MOUNT'} {route.path}")
+        
         # Run the unified app
         import uvicorn
+        print(f"\nStarting unified app on port {port}...")
         uvicorn.run(unified_app, host="0.0.0.0", port=port, log_level="info")
     else:
+        # Check if we're actually on Render but env var is not set correctly
+        if os.getenv("PORT") == "10000":
+            print("WARNING: Port 10000 detected, might be Render environment")
+            print("Forcing unified mode...")
+            # Force unified mode
+            is_render = True
+            # Restart with unified mode
+            return main()  # Call main again
+            
         # Local development - run services separately
         print(f"Starting services for local development (RENDER env not 'true', got: {os.getenv('RENDER')})...")
         
@@ -188,6 +206,13 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 if __name__ == "__main__":
+    print("\n" + "="*50)
+    print("STARTING start_services.py")
+    print(f"Script: {__file__}")
+    print(f"Working directory: {os.getcwd()}")
+    print(f"RENDER env: {os.getenv('RENDER')}")
+    print("="*50 + "\n")
+    
     # Register signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
