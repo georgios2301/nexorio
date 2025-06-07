@@ -425,8 +425,10 @@ def generate_laufkarte(data: Dict[str, Any]) -> str:
         # Then try absolute import (for Render deployment)
         from laufkarte_pdf_generator import generate_laufkarte_direct
     
-    print("Using direct PDF generation for Laufkarte")
-    return generate_laufkarte_direct(data)
+    print(f"Using direct PDF generation for Laufkarte (v2) - data: {data.get('bestellnummer', 'unknown')}")
+    result = generate_laufkarte_direct(data)
+    print(f"Laufkarte PDF generated at: {result}")
+    return result
 
 def generate_rechnung(data: Dict[str, Any]) -> str:
     """Generate Rechnung PDF"""
