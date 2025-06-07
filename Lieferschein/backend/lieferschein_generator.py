@@ -418,16 +418,46 @@ def generate_lieferschein(data: Dict[str, Any]) -> str:
 
 def generate_laufkarte(data: Dict[str, Any]) -> str:
     """Generate Laufkarte PDF using direct generation only"""
+    print("=== LAUFKARTE GENERATION START ===")
+    print(f"Version: 3.0 FINAL")
+    print(f"Data received: {data.get('bestellnummer', 'unknown')}")
+    
+    # FORCE USE OF NEW GENERATOR
+    import sys
+    import os
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    print(f"Current directory: {current_dir}")
+    print(f"Files in directory: {os.listdir(current_dir)}")
+    
+    # Import the generator
     try:
         # First try relative import (for local development)
         from .laufkarte_pdf_generator import generate_laufkarte_direct
-    except ImportError:
+        print("Imported via relative import")
+    except ImportError as e:
+        print(f"Relative import failed: {e}")
         # Then try absolute import (for Render deployment)
-        from laufkarte_pdf_generator import generate_laufkarte_direct
+        try:
+            from laufkarte_pdf_generator import generate_laufkarte_direct
+            print("Imported via absolute import")
+        except ImportError as e2:
+            print(f"Absolute import failed: {e2}")
+            # Last resort - direct file import
+            laufkarte_path = os.path.join(current_dir, 'laufkarte_pdf_generator.py')
+            if os.path.exists(laufkarte_path):
+                print(f"Found laufkarte_pdf_generator.py at: {laufkarte_path}")
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("laufkarte_pdf_generator", laufkarte_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                generate_laufkarte_direct = module.generate_laufkarte_direct
+                print("Imported via direct file import")
+            else:
+                raise Exception(f"Cannot find laufkarte_pdf_generator.py! Searched in: {current_dir}")
     
-    print(f"Using direct PDF generation for Laufkarte (v2) - data: {data.get('bestellnummer', 'unknown')}")
+    print("=== CALLING GENERATOR ===")
     result = generate_laufkarte_direct(data)
-    print(f"Laufkarte PDF generated at: {result}")
+    print(f"=== LAUFKARTE GENERATION COMPLETE: {result} ===")
     return result
 
 def generate_rechnung(data: Dict[str, Any]) -> str:

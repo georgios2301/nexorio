@@ -15,6 +15,8 @@ BOLD_FONT = 'Helvetica-Bold'
 
 def generate_laufkarte_direct(data: Dict[str, Any]) -> str:
     """Generate Laufkarte PDF with specified layout"""
+    print("=== LAUFKARTE_PDF_GENERATOR v3.0 FINAL ===")
+    print("This is the NEW generator with correct header styling")
     
     # Create temporary file
     output_path = tempfile.mktemp(suffix='_laufkarte.pdf')
