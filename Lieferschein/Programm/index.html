@@ -701,11 +701,12 @@
         // API configuration
         // Dynamic API URLs based on environment
         const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        // For Render deployment, backend runs on different subdomain
         const API_BASE = isProduction 
-            ? `${window.location.protocol}//${window.location.hostname}`
+            ? 'https://nexorio-backend.onrender.com'
             : 'http://localhost:8001';
         const PDF_API_BASE = isProduction 
-            ? `${window.location.protocol}//${window.location.hostname}`
+            ? 'https://nexorio-backend.onrender.com'
             : 'http://localhost:4000';
         
         // State
