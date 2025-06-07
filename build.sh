@@ -65,25 +65,44 @@ else
     echo "907" > lieferschein_counter.txt
 fi
 
-# Copy Vorlagen files (PDF templates and Python modules)
-echo "Copying Vorlagen files..."
+# Copy backend files (including PDF generation modules)
+echo "Copying backend modules..."
+if [ -d "Lieferschein/backend" ]; then
+    # Copy all Python modules from backend
+    for file in Lieferschein/backend/*.py; do
+        if [ -f "$file" ]; then
+            basename=$(basename "$file")
+            if [ "$basename" != "simple_supabase_server.py" ]; then
+                cp "$file" .
+                echo "Copied $basename"
+            fi
+        fi
+    done
+    
+    # Copy PDF templates from backend
+    for file in Lieferschein/backend/*.pdf; do
+        if [ -f "$file" ]; then
+            cp "$file" .
+            echo "Copied $(basename "$file")"
+        fi
+    done
+fi
+
+# Copy remaining Vorlagen files (but not Python modules or PDFs)
+echo "Copying other Vorlagen files..."
 if [ -d "Lieferschein/Vorlagen" ]; then
-    # Copy Python modules
-    for file in Lieferschein/Vorlagen/*.py; do
+    # Create Vorlagen directory
+    mkdir -p Vorlagen
+    
+    # Copy non-Python, non-PDF files
+    for file in Lieferschein/Vorlagen/*; do
         if [ -f "$file" ]; then
-            cp "$file" .
+            ext="${file##*.}"
+            if [ "$ext" != "py" ] && [ "$ext" != "pdf" ]; then
+                cp "$file" Vorlagen/
+            fi
         fi
     done
-    
-    # Copy PDF templates
-    for file in Lieferschein/Vorlagen/*.pdf; do
-        if [ -f "$file" ]; then
-            cp "$file" .
-        fi
-    done
-    
-    # Also keep the Vorlagen directory structure for any remaining files
-    cp -r Lieferschein/Vorlagen .
 fi
 
 # Install Python dependencies
