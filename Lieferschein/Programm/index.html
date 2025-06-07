@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DZMetall Lieferschein Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00d4aa',
+                        secondary: '#0084ff',
+                        dark: {
+                            900: '#1a1a1a',
+                            800: '#2d2d2d',
+                            700: '#3d3d3d',
+                            600: '#4d4d4d'
+                        }
+                    },
+                    borderRadius: {
+                        'xl': '12px',
+                        'lg': '10px'
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.3)',
+                        'glow': '0 0 15px rgba(0, 212, 170, 0.5)'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        
+        .glassmorphism {
+            background: rgba(45, 45, 45, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            background-color: rgba(45, 45, 45, 0.5);
+        }
+        
+        .dropzone:hover, .dropzone.dragover {
+            border-color: #00d4aa;
+            background-color: rgba(0, 212, 170, 0.05);
+        }
+        
+        .order-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #00d4aa;
+        }
+        
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        
+        .document-button {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .document-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .document-button:hover::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(255,255,255,0.13), rgba(255,255,255,0.01));
+            pointer-events: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .nav-link.active {
+            background-color: #3d3d3d;
+            color: #00d4aa;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .position-row {
+            transition: background-color 0.2s ease;
+        }
+        
+        .position-row:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .editable-cell {
+            cursor: text;
+            position: relative;
+            transition: all 0.25s ease;
+        }
+        
+        .editable-cell:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.3);
+        }
+        
+        .editable-cell input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            padding: 0.25rem;
+            color: #f0f0f0;
+        }
+        
+        .editable-cell input:focus {
+            outline: 2px solid #00d4aa;
+            background: rgba(45, 45, 45, 0.8);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-online {
+            background-color: rgba(0, 212, 170, 0.15);
+            color: #00d4aa;
+        }
+        
+        .status-offline {
+            background-color: rgba(255, 50, 50, 0.15);
+            color: #ff3232;
+        }
+        
+        .status-checking {
+            background-color: rgba(255, 200, 0, 0.15);
+            color: #ffc800;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Checkbox styling */
+        .form-checkbox {
+            cursor: pointer;
+            border: 2px solid #4d4d4d;
+            background-color: transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .form-checkbox:checked {
+            background-color: #00d4aa;
+            border-color: #00d4aa;
+        }
+        
+        .form-checkbox:hover {
+            border-color: #00d4aa;
+        }
+        
+        /* Selected row styling */
+        .order-row.selected {
+            background-color: rgba(0, 212, 170, 0.1);
+        }
+        
+        /* Floating progress window */
+        .floating-progress {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: 500px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-progress.minimized {
+            width: 300px;
+            max-height: 60px;
+        }
+        
+        .floating-progress-header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        
+        .floating-progress-body {
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .floating-progress.minimized .floating-progress-body {
+            display: none;
+        }
+        
+        .file-progress-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .file-progress-item:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body class="h-screen flex">
+    <!-- Sidebar -->
+    <div class="glassmorphism h-full w-64 p-6 flex flex-col">
+        <!-- Logo -->
+        <div class="mb-10 flex items-center">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center mr-3">
+                <i class="fas fa-truck-loading text-white text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-white">DZMetall</h1>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="flex flex-col space-y-2">
+            <a href="#" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-xl bg-dark-700 text-primary active" data-target="orders">
+                <i class="fas fa-list"></i>
+                <span>Bestellungen</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-xl text-gray-300 hover:bg-dark-700 hover:text-white transition-colors" data-target="history">
+                <i class="fas fa-history"></i>
+                <span>Verlauf</span>
+            </a>
+        </nav>
+        
+        <div class="mt-auto space-y-4">
+            <button id="uploadBtn" class="w-full py-3 px-4 flex items-center justify-center space-x-3 rounded-xl text-center bg-gradient-to-r from-primary to-secondary text-white font-medium hover:from-secondary hover:to-primary transition-all transform hover:-translate-y-0.5 duration-200">
+                <i class="fas fa-upload"></i>
+                <span>Lieferschein hochladen</span>
+            </button>
+            
+            <div class="text-center">
+                <div id="serverStatus" class="text-sm text-gray-400">
+                    Backend: <span class="status-badge status-checking">Prüfe...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="glassmorphism h-20 flex items-center justify-between px-8 py-4">
+            <div>
+                <h2 class="text-xl font-bold">Lieferschein Manager</h2>
+                <p class="text-gray-400 text-sm">Verwaltung von Bestellungen und Dokumenten</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="refreshBtn" class="p-2 rounded-lg hover:bg-dark-700 transition-colors" title="Aktualisieren">
+                    <i class="fas fa-sync-alt text-gray-300"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Section -->
+        <main class="flex-1 overflow-auto p-8 bg-dark-900">
+            <div class="max-w-7xl mx-auto">
+                <!-- Order List -->
+                <div class="glassmorphism rounded-xl shadow-soft p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white flex items-center">
+                            <i class="fas fa-list mr-2 text-primary"></i> Bestellungen
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <span id="selectedCount" class="text-sm text-gray-400 hidden">
+                                <span class="selected-count">0</span> ausgewählt
+                            </span>
+                            <!-- Document Generation Buttons -->
+                            <button id="generateLieferschein" class="document-action-btn bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="lieferschein" disabled>
+                                <i class="fas fa-clipboard-list mr-2"></i> Lieferschein
+                            </button>
+                            <button id="generateLaufkarte" class="document-action-btn bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-orange-500 hover:to-yellow-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="laufkarte" disabled>
+                                <i class="fas fa-file-alt mr-2"></i> Laufkarte
+                            </button>
+                            <button id="generateRechnung" class="document-action-btn bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="rechnung" disabled>
+                                <i class="fas fa-file-invoice-dollar mr-2"></i> Rechnung
+                            </button>
+                            <div class="w-px h-8 bg-gray-600 mx-2"></div>
+                            <button id="deleteSelected" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all" disabled>
+                                <i class="fas fa-trash-alt mr-2"></i> Löschen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-dark-800 border-b border-dark-600">
+                                    <th class="py-3 px-4 text-center text-sm font-medium text-gray-400" style="width: 50px;">
+                                        <input type="checkbox" id="selectAllOrders" class="form-checkbox h-4 w-4 text-primary rounded">
+                                    </th>
+                                    <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Bestellnummer</th>
+                                    <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Erstellt am</th>
+                                    <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderList">
+                                <!-- Orders will be loaded from API -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="emptyState" class="hidden text-center py-8">
+                        <i class="fas fa-inbox text-4xl text-gray-600 mb-3"></i>
+                        <p class="text-gray-400">Keine Bestellungen vorhanden</p>
+                    </div>
+                </div>
+                
+                <!-- Order Details Section - Initially Hidden -->
+                <div id="orderDetails" class="hidden fade-in glassmorphism rounded-xl shadow-soft p-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 id="orderId" class="text-2xl font-bold text-primary"></h3>
+                            <p id="orderDate" class="text-sm text-gray-400"></p>
+                        </div>
+                        <button id="closeDetails" class="text-gray-400 hover:text-gray-200 text-xl focus:outline-none transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Positions Table -->
+                    <h4 class="font-medium mb-4 text-white">Positionen</h4>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-dark-800 border-b border-dark-600">
+                                    <th class="py-2 px-3 text-left text-gray-400">Pos</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Auftrag</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Beschreibung</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Vorgang</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Menge</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Preis</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Modell</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">F/V</th>
+                                    <th class="py-2 px-3 text-left text-gray-400">Werkstoff</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsTable">
+                                <!-- Positions will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="savePositions" class="bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all transform hover:-translate-y-0.5" disabled>
+                            <i class="fas fa-save mr-2"></i> Änderungen speichern
+                        </button>
+                        <span id="saveStatus" class="text-sm text-gray-400"></span>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium mb-4 text-white">Dokumente erstellen</h4>
+                        <div class="flex space-x-3 mb-6">
+                            <button class="single-doc-btn bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="lieferschein">
+                                <i class="fas fa-clipboard-list mr-2"></i> Lieferschein
+                            </button>
+                            <button class="single-doc-btn bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-orange-500 hover:to-yellow-500 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="laufkarte">
+                                <i class="fas fa-file-alt mr-2"></i> Laufkarte
+                            </button>
+                            <button class="single-doc-btn bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="rechnung">
+                                <i class="fas fa-file-invoice-dollar mr-2"></i> Rechnung
+                            </button>
+                        </div>
+                        
+                        <h4 class="font-medium mb-4 text-white">Weitere Aktionen</h4>
+                        <div class="flex space-x-3">
+                            <button id="showOrderHistory" class="bg-dark-800 hover:bg-dark-700 border border-gray-600 text-gray-300 hover:text-primary py-2 px-4 rounded-lg flex items-center transition-colors">
+                                <i class="fas fa-history mr-2"></i> Dokumentenverlauf
+                            </button>
+                            <button id="deleteOrder" class="bg-dark-800 hover:bg-red-900 border border-red-800 text-red-400 hover:text-red-300 py-2 px-4 rounded-lg flex items-center transition-colors">
+                                <i class="fas fa-trash-alt mr-2"></i> Bestellung löschen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Document History Section - Initially Hidden -->
+                <div id="documentHistory" class="hidden fade-in">
+                    <div class="glassmorphism rounded-xl shadow-soft p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fas fa-history mr-2 text-primary"></i> Dokumentenverlauf
+                            </h3>
+                            <div class="flex items-center space-x-4">
+                                <span id="selectedHistoryCount" class="text-sm text-gray-400 hidden">
+                                    <span class="selected-history-count">0</span> ausgewählt
+                                </span>
+                                <button id="deleteSelectedHistory" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all hidden" disabled>
+                                    <i class="fas fa-trash-alt mr-2"></i> Auswahl löschen
+                                </button>
+                                <div class="w-px h-8 bg-gray-600 mx-2"></div>
+                                <div class="flex items-center space-x-2">
+                                    <label class="text-sm text-gray-400">Filter:</label>
+                                    <select id="historyFilter" class="bg-dark-700 text-white px-3 py-1 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="">Alle Dokumente</option>
+                                        <option value="lieferschein">Nur Lieferscheine</option>
+                                        <option value="laufkarte">Nur Laufkarten</option>
+                                        <option value="rechnung">Nur Rechnungen</option>
+                                    </select>
+                                </div>
+                                <button id="refreshHistory" class="text-gray-400 hover:text-primary transition-colors">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-dark-800 border-b border-dark-600">
+                                        <th class="py-3 px-4 text-center text-sm font-medium text-gray-400" style="width: 50px;">
+                                            <input type="checkbox" id="selectAllHistory" class="form-checkbox h-4 w-4 text-primary rounded">
+                                        </th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Datum & Zeit</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Bestellnummer</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Dokumenttyp</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Erstellt von</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyList">
+                                    <!-- History entries will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="historyEmptyState" class="hidden text-center py-8">
+                            <i class="fas fa-file-alt text-4xl text-gray-600 mb-3"></i>
+                            <p class="text-gray-400">Noch keine Dokumente generiert</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order History Modal -->
+                <div id="orderHistoryModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+                    <div class="glassmorphism rounded-xl shadow-2xl p-6 w-full max-w-4xl transform transition-all max-h-[80vh] overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-white">
+                                Dokumentenverlauf - <span id="modalOrderNumber" class="text-primary"></span>
+                            </h3>
+                            <button id="closeOrderHistoryModal" class="text-gray-400 hover:text-gray-200">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-dark-800 border-b border-dark-600">
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Datum & Zeit</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Dokumenttyp</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Erstellt von</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Status</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-400">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalHistoryList">
+                                    <!-- Order-specific history entries will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="modalHistoryEmptyState" class="hidden text-center py-8">
+                            <i class="fas fa-file-alt text-4xl text-gray-600 mb-3"></i>
+                            <p class="text-gray-400">Keine Dokumente für diese Bestellung generiert</p>
+                        </div>
+                    </div>
+                </div>
+                
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="glassmorphism rounded-xl shadow-2xl p-6 w-full max-w-lg transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Lieferschein hochladen</h3>
+                <button id="closeUploadModal" class="text-gray-400 hover:text-gray-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Upload Area -->
+            <div id="uploadArea" class="mb-6">
+                <div id="dropZone" class="dropzone cursor-pointer p-12 mb-4 flex flex-col items-center justify-center relative">
+                    <i class="fas fa-cloud-upload-alt text-5xl text-primary mb-3"></i>
+                    <p class="font-medium text-center text-lg text-white">Dateien hier ablegen</p>
+                    <p class="text-sm text-gray-400 mt-1">oder klicken zum Auswählen</p>
+                    <p class="text-xs text-gray-500 mt-2">PDF, JPG, PNG (max. 10MB pro Datei)</p>
+                </div>
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png" multiple>
+            </div>
+            
+            <!-- Progress Area (hidden by default) -->
+            <div id="progressArea" class="hidden">
+                <!-- Single file progress (legacy) -->
+                <div id="singleFileProgress" class="hidden">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="relative">
+                            <svg class="w-24 h-24 transform -rotate-90">
+                                <circle cx="48" cy="48" r="36" stroke="#4d4d4d" stroke-width="8" fill="none"/>
+                                <circle id="progressCircle" cx="48" cy="48" r="36" stroke="#00d4aa" stroke-width="8" fill="none"
+                                        stroke-dasharray="226.2" stroke-dashoffset="226.2" class="transition-all duration-500"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span id="progressPercent" class="text-2xl font-bold text-primary">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="progressStatus" class="text-center text-gray-300 mb-2">Datei wird hochgeladen...</p>
+                    <div class="w-full bg-dark-700 rounded-full h-2 mb-4">
+                        <div id="progressBar" class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Multiple files progress -->
+                <div id="multipleFilesProgress" class="hidden">
+                    <h4 class="text-center text-white font-medium mb-4">
+                        <span id="uploadCounter">0</span> von <span id="totalFiles">0</span> Dateien verarbeitet
+                    </h4>
+                    <div id="fileProgressList" class="space-y-3 max-h-96 overflow-y-auto">
+                        <!-- File progress items will be added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Result Area (hidden by default) -->
+            <div id="resultArea" class="hidden text-center">
+                <div id="resultIcon" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i id="resultIconContent" class="text-3xl"></i>
+                </div>
+                <h4 id="resultTitle" class="text-lg font-bold text-white mb-2"></h4>
+                <p id="resultMessage" class="text-gray-300 mb-4"></p>
+                <button id="closeResultModal" class="bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-white py-2 px-6 rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Template Preview Modal -->
+    <!-- PDF Template Configuration Modal -->
+    <!-- Floating Order Details Window -->
+    <div id="floatingOrderDetails" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-6xl max-h-[90vh] bg-dark-800 rounded-xl shadow-2xl hidden z-50 flex flex-col">
+        <div class="bg-dark-900 px-6 py-4 rounded-t-xl flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-white">
+                Bestelldetails: <span id="floatingOrderId" class="text-primary"></span>
+            </h3>
+            <button id="closeFloatingOrder" class="text-gray-400 hover:text-white transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="mb-4 flex items-center justify-between">
+                <p id="floatingOrderDate" class="text-gray-400"></p>
+                <div class="flex space-x-2">
+                    <button id="floatingSavePositions" class="bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center transition-all transform hover:-translate-y-0.5" disabled>
+                        <i class="fas fa-save mr-2"></i>
+                        <span>Speichern</span>
+                    </button>
+                    <button id="floatingDeleteOrder" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg flex items-center transition-all transform hover:-translate-y-0.5">
+                        <i class="fas fa-trash mr-2"></i>
+                        <span>Bestellung löschen</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Positions Table -->
+            <div class="bg-dark-700 rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-dark-800 text-gray-300">
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Pos</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Auftrag</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Beschreibung</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Vorgang</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Preis</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">F/V</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Menge</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Modell</th>
+                            <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Werkstoff</th>
+                            <th class="py-3 px-4 text-center text-xs font-medium uppercase tracking-wider">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="floatingPositionsTable" class="divide-y divide-dark-600">
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mt-6">
+                <h4 class="font-medium mb-4 text-white">Dokumente erstellen</h4>
+                <div class="flex space-x-3 mb-6">
+                    <button id="floatingGenerateLieferschein" class="bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="lieferschein">
+                        <i class="fas fa-clipboard-list mr-2"></i> Lieferschein
+                    </button>
+                    <button id="floatingGenerateLaufkarte" class="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-orange-500 hover:to-yellow-500 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="laufkarte">
+                        <i class="fas fa-file-alt mr-2"></i> Laufkarte
+                    </button>
+                    <button id="floatingGenerateRechnung" class="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white py-2 px-4 rounded-lg flex items-center transition-all" data-doc-type="rechnung">
+                        <i class="fas fa-file-invoice-dollar mr-2"></i> Rechnung
+                    </button>
+                </div>
+                
+                <h4 class="font-medium mb-4 text-white">Weitere Aktionen</h4>
+                <div class="flex space-x-3">
+                    <button id="floatingShowHistory" class="bg-dark-800 hover:bg-dark-700 border border-gray-600 text-gray-300 hover:text-primary py-2 px-4 rounded-lg flex items-center transition-colors">
+                        <i class="fas fa-history mr-2"></i> Dokumentenverlauf
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Backdrop for floating window -->
+    <div id="floatingOrderBackdrop" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
+    
+    <!-- Floating Progress Window -->
+    <div id="floatingProgress" class="floating-progress hidden">
+        <div class="floating-progress-header">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-upload text-primary"></i>
+                <span class="text-white font-medium">
+                    Upload-Fortschritt (<span id="floatingUploadCounter">0</span>/<span id="floatingTotalFiles">0</span>)
+                </span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="minimizeProgress" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-window-minimize"></i>
+                </button>
+                <button id="closeProgress" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="floating-progress-body">
+            <div id="floatingFileList">
+                <!-- File progress items will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API configuration
+        const API_BASE = 'http://localhost:8001';
+        const PDF_API_BASE = 'http://localhost:4000';
+        
+        // State
+        let currentOrder = null;
+        let currentPositions = [];
+        let originalPositions = [];
+        let hasUnsavedChanges = false;
+        
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const orderList = document.getElementById('orderList');
+        const orderDetails = document.getElementById('orderDetails');
+        const closeDetails = document.getElementById('closeDetails');
+        const orderIdElement = document.getElementById('orderId');
+        const orderDateElement = document.getElementById('orderDate');
+        const uploadModal = document.getElementById('uploadModal');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const savePositions = document.getElementById('savePositions');
+        const deleteOrder = document.getElementById('deleteOrder');
+        const positionsTable = document.getElementById('positionsTable');
+        const saveStatus = document.getElementById('saveStatus');
+        const serverStatus = document.getElementById('serverStatus');
+        const emptyState = document.getElementById('emptyState');
+        
+        // New modal elements
+        const uploadBtn = document.getElementById('uploadBtn');
+        const closeUploadModal = document.getElementById('closeUploadModal');
+        const uploadArea = document.getElementById('uploadArea');
+        const progressArea = document.getElementById('progressArea');
+        const resultArea = document.getElementById('resultArea');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressCircle = document.getElementById('progressCircle');
+        const progressStatus = document.getElementById('progressStatus');
+        const closeResultModal = document.getElementById('closeResultModal');
+        
+        // Selection Management
+        let selectedOrders = new Set();
+        
+        function updateSelectedOrders() {
+            selectedOrders.clear();
+            const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            
+            checkboxes.forEach(cb => {
+                selectedOrders.add(cb.dataset.bestellnummer);
+                cb.closest('.order-row').classList.add('selected');
+            });
+            
+            // Update unselected rows
+            document.querySelectorAll('.order-checkbox:not(:checked)').forEach(cb => {
+                cb.closest('.order-row').classList.remove('selected');
+            });
+            
+            // Update UI
+            const selectedCount = selectedOrders.size;
+            const selectedCountElement = document.getElementById('selectedCount');
+            const documentButtons = document.querySelectorAll('.document-action-btn');
+            const deleteButton = document.getElementById('deleteSelected');
+            
+            if (selectedCount > 0) {
+                selectedCountElement.classList.remove('hidden');
+                selectedCountElement.querySelector('.selected-count').textContent = selectedCount;
+                documentButtons.forEach(btn => btn.disabled = false);
+                if (deleteButton) deleteButton.disabled = false;
+            } else {
+                selectedCountElement.classList.add('hidden');
+                documentButtons.forEach(btn => btn.disabled = true);
+                if (deleteButton) deleteButton.disabled = true;
+            }
+            
+            // Update select all checkbox
+            const selectAll = document.getElementById('selectAllOrders');
+            const totalCheckboxes = document.querySelectorAll('.order-checkbox').length;
+            if (selectAll) {
+                selectAll.checked = selectedCount === totalCheckboxes && totalCheckboxes > 0;
+                selectAll.indeterminate = selectedCount > 0 && selectedCount < totalCheckboxes;
+            }
+        }
+        
+        // Generate documents for selected orders
+        async function generateDocumentsForSelected(docType) {
+            if (selectedOrders.size === 0) return;
+            
+            showNotification('info', 'Verarbeitung...', `Erstelle ${selectedOrders.size} ${docType}(s)...`);
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const bestellnummer of selectedOrders) {
+                try {
+                    // Load order positions
+                    const response = await fetch(`${API_BASE}/api/positions?bestellnummer=${bestellnummer}`);
+                    if (!response.ok) throw new Error('Failed to load positions');
+                    
+                    const positions = await response.json();
+                    const orderData = {
+                        bestellnummer: bestellnummer,
+                        positionen: positions
+                    };
+                    
+                    // Generate document
+                    await generateDocument(docType, orderData);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Error generating ${docType} for ${bestellnummer}:`, error);
+                    failCount++;
+                }
+            }
+            
+            // Show result
+            if (failCount === 0) {
+                showNotification('success', 'Erfolgreich', `${successCount} ${docType}(s) erfolgreich erstellt`);
+            } else {
+                showNotification('warning', 'Teilweise erfolgreich', 
+                    `${successCount} erfolgreich, ${failCount} fehlgeschlagen`);
+            }
+            
+            // Clear selection
+            document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedOrders();
+        }
+        
+        // Delete selected orders
+        async function deleteSelectedOrders() {
+            if (selectedOrders.size === 0) return;
+            
+            const count = selectedOrders.size;
+            const orderText = count === 1 ? 'Bestellung' : 'Bestellungen';
+            
+            if (!confirm(`Möchten Sie wirklich ${count} ${orderText} löschen?\n\nBestellnummern:\n${Array.from(selectedOrders).join('\n')}`)) {
+                return;
+            }
+            
+            showNotification('info', 'Lösche...', `Lösche ${count} ${orderText}...`);
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const bestellnummer of selectedOrders) {
+                try {
+                    const response = await fetch(`${API_BASE}/api/orders/${bestellnummer}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        throw new Error('Failed to delete');
+                    }
+                } catch (error) {
+                    console.error(`Error deleting order ${bestellnummer}:`, error);
+                    failCount++;
+                }
+            }
+            
+            // Show result
+            if (failCount === 0) {
+                showNotification('success', 'Erfolgreich', `${successCount} ${orderText} erfolgreich gelöscht`);
+            } else {
+                showNotification('warning', 'Teilweise erfolgreich', 
+                    `${successCount} gelöscht, ${failCount} fehlgeschlagen`);
+            }
+            
+            // Clear selection and reload
+            document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = false);
+            updateSelectedOrders();
+            loadOrders();
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServerStatus();
+            loadOrders();
+            setupEventListeners();
+        });
+        
+        // Check server status
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    serverStatus.innerHTML = 'Backend: <span class="status-badge status-online">Online</span>';
+                } else {
+                    serverStatus.innerHTML = 'Backend: <span class="status-badge status-offline">Offline</span>';
+                }
+            } catch (error) {
+                serverStatus.innerHTML = 'Backend: <span class="status-badge status-offline">Offline</span>';
+            }
+        }
+        
+        // Load orders from API
+        async function loadOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/api/orders`);
+                if (!response.ok) throw new Error('Failed to load orders');
+                
+                const orders = await response.json();
+                displayOrders(orders);
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showNotification('error', 'Fehler', 'Bestellungen konnten nicht geladen werden');
+            }
+        }
+        
+        // Display orders in table
+        function displayOrders(orders) {
+            orderList.innerHTML = '';
+            
+            if (orders.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.className = 'order-row border-b border-dark-600 cursor-pointer hover:bg-dark-800';
+                row.dataset.bestellnummer = order.bestellnummer;
+                row.innerHTML = `
+                    <td class="py-4 px-4 text-center">
+                        <input type="checkbox" class="order-checkbox form-checkbox h-4 w-4 text-primary rounded" data-bestellnummer="${order.bestellnummer}">
+                    </td>
+                    <td class="py-4 px-4 font-medium text-white">${order.bestellnummer}</td>
+                    <td class="py-4 px-4 text-gray-300">${formatDate(order.created_at)}</td>
+                    <td class="py-4 px-4">
+                        <div class="flex space-x-3">
+                            <button class="view-order text-primary hover:text-green-400 focus:outline-none transition-colors" title="Anzeigen">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="delete-order text-red-500 hover:text-red-400 focus:outline-none transition-colors" title="Löschen" data-bestellnummer="${order.bestellnummer}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                // Add click event for view button
+                const viewBtn = row.querySelector('.view-order');
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showOrderDetails(order);
+                });
+                
+                // Add click event for delete button
+                const deleteBtn = row.querySelector('.delete-order');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteOrderFromList(order.bestellnummer);
+                });
+                
+                // Add checkbox event
+                const checkbox = row.querySelector('.order-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    updateSelectedOrders();
+                });
+                
+                // Click on row also shows details (except on buttons and checkbox)
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('button') && !e.target.closest('input[type="checkbox"]')) {
+                        showOrderDetails(order);
+                    }
+                });
+                
+                orderList.appendChild(row);
+            });
+            
+            // Initialize selection state
+            updateSelectedOrders();
+        }
+        
+        // Variables for floating order details
+        let floatingCurrentOrder = null;
+        let floatingCurrentPositions = [];
+        let floatingOriginalPositions = [];
+        let floatingHasUnsavedChanges = false;
+        
+        // Show floating order details (from history view)
+        async function showFloatingOrderDetails(bestellnummer) {
+            try {
+                // Show floating window and backdrop
+                document.getElementById('floatingOrderDetails').classList.remove('hidden');
+                document.getElementById('floatingOrderBackdrop').classList.remove('hidden');
+                
+                // Set order info
+                document.getElementById('floatingOrderId').textContent = bestellnummer;
+                document.getElementById('floatingOrderDate').textContent = `Lade Bestelldaten...`;
+                
+                // Load positions
+                const response = await fetch(`${API_BASE}/api/positions?bestellnummer=${bestellnummer}`);
+                if (!response.ok) throw new Error('Failed to load positions');
+                
+                floatingCurrentPositions = await response.json();
+                floatingOriginalPositions = JSON.parse(JSON.stringify(floatingCurrentPositions));
+                floatingHasUnsavedChanges = false;
+                floatingCurrentOrder = { bestellnummer };
+                
+                // Update date if we can find it
+                const historyRows = document.querySelectorAll('.history-row');
+                for (let row of historyRows) {
+                    if (row.querySelector('a').textContent === bestellnummer) {
+                        const dateText = row.querySelector('td:nth-child(2)').textContent;
+                        document.getElementById('floatingOrderDate').textContent = `Erstellt am: ${dateText}`;
+                        break;
+                    }
+                }
+                
+                updateFloatingSaveButton();
+                displayFloatingPositions(floatingCurrentPositions);
+                
+            } catch (error) {
+                console.error('Error loading floating order details:', error);
+                showNotification('error', 'Fehler', 'Bestelldetails konnten nicht geladen werden');
+                closeFloatingOrderDetails();
+            }
+        }
+        
+        // Close floating order details
+        function closeFloatingOrderDetails() {
+            document.getElementById('floatingOrderDetails').classList.add('hidden');
+            document.getElementById('floatingOrderBackdrop').classList.add('hidden');
+            floatingCurrentOrder = null;
+            floatingCurrentPositions = [];
+            floatingOriginalPositions = [];
+            floatingHasUnsavedChanges = false;
+        }
+        
+        // Update floating save button state
+        function updateFloatingSaveButton() {
+            document.getElementById('floatingSavePositions').disabled = !floatingHasUnsavedChanges;
+        }
+        
+        // Display positions in floating table
+        function displayFloatingPositions(positions) {
+            const tbody = document.getElementById('floatingPositionsTable');
+            tbody.innerHTML = '';
+            
+            positions.forEach((position, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-dark-600 transition-colors';
+                row.innerHTML = `
+                    <td class="py-2 px-4 text-sm">${position.pos_nr || ''}</td>
+                    <td class="py-2 px-4">
+                        <input type="text" value="${position.auftrag || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-full"
+                               onchange="updateFloatingPosition(${index}, 'auftrag', this.value)">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="text" value="${position.beschreibung || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-full"
+                               onchange="updateFloatingPosition(${index}, 'beschreibung', this.value)">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="text" value="${position.vorgang || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-full"
+                               onchange="updateFloatingPosition(${index}, 'vorgang', this.value)">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="number" step="0.01" value="${position.preis || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-20"
+                               onchange="updateFloatingPosition(${index}, 'preis', parseFloat(this.value))">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="text" value="${position.fv || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-full"
+                               onchange="updateFloatingPosition(${index}, 'fv', this.value)">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="number" value="${position.menge || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-20"
+                               onchange="updateFloatingPosition(${index}, 'menge', parseFloat(this.value))">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="text" value="${position.modellnummer || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-full"
+                               onchange="updateFloatingPosition(${index}, 'modellnummer', this.value)">
+                    </td>
+                    <td class="py-2 px-4">
+                        <input type="text" value="${position.werkstoff || ''}" 
+                               class="bg-dark-900 text-white px-2 py-1 rounded w-full"
+                               onchange="updateFloatingPosition(${index}, 'werkstoff', this.value)">
+                    </td>
+                    <td class="py-2 px-4 text-center">
+                        <button onclick="deleteFloatingPosition(${index})" 
+                                class="text-red-400 hover:text-red-300">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Update floating position
+        function updateFloatingPosition(index, field, value) {
+            floatingCurrentPositions[index][field] = value;
+            floatingHasUnsavedChanges = true;
+            updateFloatingSaveButton();
+        }
+        
+        // Delete floating position
+        function deleteFloatingPosition(index) {
+            if (confirm('Möchten Sie diese Position wirklich löschen?')) {
+                floatingCurrentPositions.splice(index, 1);
+                floatingHasUnsavedChanges = true;
+                updateFloatingSaveButton();
+                displayFloatingPositions(floatingCurrentPositions);
+            }
+        }
+        
+        // Event listeners for floating window
+        document.getElementById('closeFloatingOrder').addEventListener('click', closeFloatingOrderDetails);
+        document.getElementById('floatingOrderBackdrop').addEventListener('click', closeFloatingOrderDetails);
+        
+        // Save floating positions
+        document.getElementById('floatingSavePositions').addEventListener('click', async () => {
+            if (!floatingHasUnsavedChanges) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/positions/batch`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(floatingCurrentPositions)
+                });
+                
+                if (!response.ok) throw new Error('Failed to save positions');
+                
+                floatingOriginalPositions = JSON.parse(JSON.stringify(floatingCurrentPositions));
+                floatingHasUnsavedChanges = false;
+                updateFloatingSaveButton();
+                showNotification('success', 'Gespeichert', 'Positionen wurden erfolgreich gespeichert');
+                
+                // Refresh history view
+                loadDocumentHistory();
+                
+            } catch (error) {
+                console.error('Error saving positions:', error);
+                showNotification('error', 'Fehler', 'Positionen konnten nicht gespeichert werden');
+            }
+        });
+        
+        // Delete order from floating window
+        document.getElementById('floatingDeleteOrder').addEventListener('click', async () => {
+            if (!floatingCurrentOrder) return;
+            
+            if (!confirm(`Möchten Sie die Bestellung ${floatingCurrentOrder.bestellnummer} wirklich löschen?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/orders/${floatingCurrentOrder.bestellnummer}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete order');
+                
+                showNotification('success', 'Gelöscht', 'Bestellung wurde erfolgreich gelöscht');
+                closeFloatingOrderDetails();
+                loadDocumentHistory();
+                
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                showNotification('error', 'Fehler', 'Bestellung konnte nicht gelöscht werden');
+            }
+        });
+        
+        // Generate documents from floating window
+        document.getElementById('floatingGenerateLieferschein').addEventListener('click', async () => {
+            if (!floatingCurrentOrder) return;
+            
+            // Save current order and positions to global variables so generatePDF can access them
+            currentOrder = floatingCurrentOrder;
+            currentPositions = floatingCurrentPositions;
+            
+            await generatePDF('lieferschein');
+        });
+        
+        document.getElementById('floatingGenerateLaufkarte').addEventListener('click', async () => {
+            if (!floatingCurrentOrder) return;
+            
+            // Save current order and positions to global variables so generatePDF can access them
+            currentOrder = floatingCurrentOrder;
+            currentPositions = floatingCurrentPositions;
+            
+            await generatePDF('laufkarte');
+        });
+        
+        document.getElementById('floatingGenerateRechnung').addEventListener('click', async () => {
+            if (!floatingCurrentOrder) return;
+            
+            // Save current order and positions to global variables so generatePDF can access them
+            currentOrder = floatingCurrentOrder;
+            currentPositions = floatingCurrentPositions;
+            
+            await generatePDF('rechnung');
+        });
+        
+        // Show history from floating window
+        document.getElementById('floatingShowHistory').addEventListener('click', () => {
+            if (floatingCurrentOrder) {
+                showOrderHistoryModal(floatingCurrentOrder.bestellnummer);
+            }
+        });
+        
+        // Show order details
+        async function showOrderDetails(orderOrBestellnummer) {
+            // Handle both order object and bestellnummer string
+            let bestellnummer, order;
+            
+            if (typeof orderOrBestellnummer === 'string') {
+                // Called from history with just bestellnummer
+                bestellnummer = orderOrBestellnummer;
+                // First, hide history and show orders section
+                document.getElementById('documentHistory').classList.add('hidden');
+                document.querySelector('.glassmorphism.rounded-xl.shadow-soft.p-6.mb-6').classList.remove('hidden');
+                
+                // Try to find the order in the existing orders list
+                const existingOrder = Array.from(orderList.querySelectorAll('.order-row')).find(row => 
+                    row.querySelector('.font-medium').textContent === bestellnummer
+                );
+                
+                if (existingOrder) {
+                    order = {
+                        bestellnummer: bestellnummer,
+                        created_at: existingOrder.querySelector('.text-gray-400').textContent.replace('Erstellt: ', '')
+                    };
+                } else {
+                    // Create a minimal order object
+                    order = {
+                        bestellnummer: bestellnummer,
+                        created_at: new Date().toISOString()
+                    };
+                }
+            } else {
+                // Called normally with order object
+                order = orderOrBestellnummer;
+                bestellnummer = order.bestellnummer;
+            }
+            
+            currentOrder = order;
+            orderIdElement.textContent = bestellnummer;
+            orderDateElement.textContent = `Erstellt am: ${formatDate(order.created_at)}`;
+            
+            // Load positions
+            try {
+                const response = await fetch(`${API_BASE}/api/positions?bestellnummer=${bestellnummer}`);
+                if (!response.ok) throw new Error('Failed to load positions');
+                
+                currentPositions = await response.json();
+                originalPositions = JSON.parse(JSON.stringify(currentPositions)); // Deep copy
+                hasUnsavedChanges = false;
+                updateSaveButton();
+                console.log('Loaded positions from server:', currentPositions); // Debug log
+                displayPositions(currentPositions);
+                
+                orderDetails.classList.remove('hidden');
+                orderDetails.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                console.error('Error loading positions:', error);
+                showNotification('error', 'Fehler', 'Positionen konnten nicht geladen werden');
+            }
+        }
+        
+        // Display positions in table
+        function displayPositions(positions) {
+            positionsTable.innerHTML = '';
+            
+            positions.forEach((position, index) => {
+                const row = document.createElement('tr');
+                row.className = 'position-row border-b border-dark-600';
+                row.innerHTML = `
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="pos_nr" data-index="${index}">
+                            ${position.pos_nr || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="auftrag" data-index="${index}">
+                            ${position.auftrag || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="beschreibung" data-index="${index}">
+                            ${position.beschreibung || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="vorgang" data-index="${index}">
+                            ${position.vorgang || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="menge" data-index="${index}">
+                            ${position.menge || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="preis" data-index="${index}">
+                            ${position.preis ? position.preis.toFixed(2) : '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="modellnummer" data-index="${index}">
+                            ${position.modellnummer || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="fv" data-index="${index}">
+                            ${position.fv || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell rounded" data-field="werkstoff" data-index="${index}">
+                            ${position.werkstoff || '-'}
+                        </div>
+                    </td>
+                `;
+                positionsTable.appendChild(row);
+            });
+            
+            // Make cells editable
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('click', makeEditable);
+            });
+        }
+        
+        // Make cell editable
+        function makeEditable(event) {
+            const cell = event.currentTarget;
+            const field = cell.dataset.field;
+            const index = parseInt(cell.dataset.index);
+            const currentValue = currentPositions[index][field] || '';
+            
+            const input = document.createElement('input');
+            input.type = field === 'menge' || field === 'preis' ? 'number' : 'text';
+            input.value = currentValue;
+            input.className = 'w-full px-2 py-1 rounded';
+            
+            input.addEventListener('blur', () => {
+                const newValue = input.value;
+                if (field === 'menge' || field === 'preis') {
+                    currentPositions[index][field] = newValue ? parseFloat(newValue) : null;
+                } else {
+                    currentPositions[index][field] = newValue || null;
+                }
+                checkForChanges();
+                saveStatus.textContent = hasUnsavedChanges ? 'Ungespeicherte Änderungen' : '';
+                saveStatus.className = hasUnsavedChanges ? 'text-sm text-yellow-500' : 'text-sm text-gray-400';
+                displayPositions(currentPositions);
+            });
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            });
+            
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+        }
+        
+        // Save positions
+        async function savePositionsToAPI() {
+            if (!hasUnsavedChanges) return;
+            
+            try {
+                saveStatus.textContent = 'Speichere...';
+                saveStatus.className = 'text-sm text-blue-400';
+                
+                const updateData = currentPositions.map(pos => {
+                    console.log('Original position:', pos); // Debug log
+                    const data = {
+                        bestellnummer: currentOrder.bestellnummer,
+                        pos_nr: pos.pos_nr,
+                        auftrag: pos.auftrag,
+                        beschreibung: pos.beschreibung,
+                        vorgang: pos.vorgang,
+                        preis: pos.preis,
+                        menge: pos.menge,
+                        modellnummer: pos.modellnummer,
+                        fv: pos.fv,
+                        werkstoff: pos.werkstoff
+                    };
+                    
+                    console.log('Data to send:', data); // Debug log
+                    return data;
+                });
+                
+                console.log('Sending positions:', updateData);
+                
+                const response = await fetch(`${API_BASE}/api/positions/batch`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData);
+                    throw new Error(errorData.detail || 'Failed to save positions');
+                }
+                
+                originalPositions = JSON.parse(JSON.stringify(currentPositions)); // Update original
+                hasUnsavedChanges = false;
+                updateSaveButton();
+                saveStatus.textContent = 'Gespeichert!';
+                saveStatus.className = 'text-sm text-green-400';
+                
+                setTimeout(() => {
+                    saveStatus.textContent = '';
+                }, 3000);
+            } catch (error) {
+                console.error('Error saving positions:', error);
+                saveStatus.textContent = 'Fehler beim Speichern';
+                saveStatus.className = 'text-sm text-red-400';
+            }
+        }
+        
+        // Delete order from list
+        async function deleteOrderFromList(bestellnummer) {
+            if (!confirm(`Möchten Sie die Bestellung ${bestellnummer} wirklich löschen?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/orders/${bestellnummer}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete order');
+                
+                // Hide details if this order was shown
+                if (currentOrder && currentOrder.bestellnummer === bestellnummer) {
+                    orderDetails.classList.add('hidden');
+                    currentOrder = null;
+                }
+                
+                // Reload orders list
+                loadOrders();
+                
+                // Show success notification
+                showNotification('success', 'Bestellung gelöscht', `Bestellung ${bestellnummer} wurde erfolgreich gelöscht`);
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                showNotification('error', 'Fehler', 'Die Bestellung konnte nicht gelöscht werden');
+            }
+        }
+        
+        // Delete current order (from detail view)
+        async function deleteCurrentOrder() {
+            if (!currentOrder) return;
+            deleteOrderFromList(currentOrder.bestellnummer);
+        }
+        
+        // Generate document for a single order
+        async function generateDocument(docType, orderData) {
+            try {
+                const response = await fetch(`${PDF_API_BASE}/generate-pdf`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        docType: docType,
+                        data: {
+                            bestellnummer: orderData.bestellnummer,
+                            datum: formatDateOnly(new Date()),
+                            positionen: orderData.positionen
+                        }
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to generate PDF');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                throw error;
+            }
+        }
+        
+        // Generate PDF (for backwards compatibility with single order view)
+        async function generatePDF(docType) {
+            try {
+                const response = await fetch(`${PDF_API_BASE}/generate-pdf`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        docType: docType,
+                        data: {
+                            bestellnummer: currentOrder.bestellnummer,
+                            datum: formatDateOnly(currentOrder.created_at),
+                            positionen: currentPositions
+                        }
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to generate PDF');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('error', 'Fehler', 'PDF konnte nicht erstellt werden. Ist der PDF-Server gestartet?');
+            }
+        }
+        
+        // Process multiple files
+        async function processMultipleFiles(files) {
+            if (files.length === 0) return;
+            
+            // Close upload modal
+            uploadModal.classList.add('hidden');
+            
+            // Show floating progress window
+            const floatingProgress = document.getElementById('floatingProgress');
+            floatingProgress.classList.remove('hidden', 'minimized');
+            
+            // Update counters
+            document.getElementById('floatingTotalFiles').textContent = files.length;
+            document.getElementById('floatingUploadCounter').textContent = '0';
+            
+            // Clear previous progress items
+            const floatingFileList = document.getElementById('floatingFileList');
+            floatingFileList.innerHTML = '';
+            
+            let successCount = 0;
+            let failCount = 0;
+            const results = [];
+            
+            // Process each file
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Create progress item for floating window
+                const progressItem = createFloatingProgressItem(file.name, i);
+                floatingFileList.appendChild(progressItem);
+                
+                try {
+                    // Update counter
+                    document.getElementById('floatingUploadCounter').textContent = i + 1;
+                    
+                    // Upload file with progress tracking
+                    const result = await uploadSingleFileWithProgress(file, progressItem);
+                    
+                    if (result.success) {
+                        successCount++;
+                        results.push(result);
+                        updateFloatingProgress(progressItem, 'success', 'Erfolgreich', 100);
+                    } else {
+                        failCount++;
+                        updateFloatingProgress(progressItem, 'error', result.error || 'Fehler', 100);
+                    }
+                } catch (error) {
+                    failCount++;
+                    updateFloatingProgress(progressItem, 'error', 'Fehler', 100);
+                }
+            }
+            
+            // Show final result after a short delay
+            setTimeout(() => {
+                let message = `${successCount} von ${files.length} Dateien erfolgreich verarbeitet.`;
+                
+                if (successCount > 0) {
+                    message += '\n\nVerarbeitete Bestellungen:';
+                    results.forEach(r => {
+                        if (r.data && r.data.bestellnummer) {
+                            message += `\n• ${r.data.bestellnummer} (${r.data.positionen ? r.data.positionen.length : 0} Positionen)`;
+                        }
+                    });
+                }
+                
+                if (failCount > 0) {
+                    showResult('warning', 'Teilweise erfolgreich', message);
+                } else {
+                    showResult('success', 'Alle Dateien erfolgreich verarbeitet!', message);
+                }
+                
+                loadOrders();
+                
+                // Hide floating progress after 3 seconds
+                setTimeout(() => {
+                    floatingProgress.classList.add('hidden');
+                }, 3000);
+            }, 1000);
+        }
+        
+        // Create floating progress item
+        function createFloatingProgressItem(filename, index) {
+            const item = document.createElement('div');
+            item.className = 'file-progress-item';
+            item.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-white truncate flex-1 mr-2" title="${filename}">${filename}</span>
+                    <span class="progress-percentage text-xs text-gray-400">0%</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex-1 bg-dark-800 rounded-full h-2">
+                        <div class="progress-bar bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <span class="status-icon text-lg">
+                        <i class="fas fa-spinner fa-spin text-primary"></i>
+                    </span>
+                </div>
+            `;
+            return item;
+        }
+        
+        // Update floating progress
+        function updateFloatingProgress(item, status, message, percentage) {
+            const progressBar = item.querySelector('.progress-bar');
+            const percentageText = item.querySelector('.progress-percentage');
+            const statusIcon = item.querySelector('.status-icon');
+            
+            percentageText.textContent = `${percentage}%`;
+            progressBar.style.width = `${percentage}%`;
+            
+            if (status === 'success') {
+                progressBar.className = 'progress-bar bg-green-500 h-2 rounded-full transition-all duration-300';
+                statusIcon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
+            } else if (status === 'error') {
+                progressBar.className = 'progress-bar bg-red-500 h-2 rounded-full transition-all duration-300';
+                statusIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
+            } else if (status === 'processing') {
+                statusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
+            }
+        }
+        
+        // Upload single file with progress tracking
+        async function uploadSingleFileWithProgress(file, progressItem) {
+            // Start with 10% progress
+            updateFloatingProgress(progressItem, 'processing', 'Starte Upload...', 10);
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                // Simulate progress updates
+                const progressInterval = setInterval(() => {
+                    const currentProgress = parseInt(progressItem.querySelector('.progress-percentage').textContent);
+                    if (currentProgress < 90) {
+                        updateFloatingProgress(progressItem, 'processing', 'Verarbeite...', currentProgress + 10);
+                    }
+                }, 300);
+                
+                const response = await fetch(`${API_BASE}/api/extract`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Upload error for', file.name, ':', errorData);
+                    
+                    let errorMessage = 'Fehler';
+                    if (response.status === 422 && errorData.detail && errorData.detail.error) {
+                        errorMessage = errorData.detail.error;
+                    }
+                    
+                    return { success: false, error: errorMessage };
+                }
+                
+                const result = await response.json();
+                return { success: true, data: result };
+                
+            } catch (error) {
+                console.error('Error uploading file:', file.name, error);
+                return { success: false, error: 'Netzwerkfehler' };
+            }
+        }
+        
+        // Create progress item for a file
+        function createFileProgressItem(filename, index) {
+            const item = document.createElement('div');
+            item.className = 'bg-dark-700 rounded-lg p-4';
+            item.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-white truncate flex-1 mr-2">${filename}</span>
+                    <span class="file-status text-xs text-gray-400">Warte...</span>
+                </div>
+                <div class="w-full bg-dark-800 rounded-full h-2">
+                    <div class="file-progress-bar bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            `;
+            return item;
+        }
+        
+        // Update file progress
+        function updateFileProgress(item, status, message) {
+            const statusElement = item.querySelector('.file-status');
+            const progressBar = item.querySelector('.file-progress-bar');
+            
+            statusElement.textContent = message;
+            
+            if (status === 'success') {
+                statusElement.className = 'file-status text-xs text-green-400';
+                progressBar.style.width = '100%';
+            } else if (status === 'error') {
+                statusElement.className = 'file-status text-xs text-red-400';
+                progressBar.style.width = '100%';
+                progressBar.className = 'file-progress-bar bg-red-600 h-2 rounded-full';
+            } else if (status === 'processing') {
+                statusElement.className = 'file-status text-xs text-primary';
+                progressBar.style.width = '50%';
+            }
+        }
+        
+        // Upload single file with progress
+        async function uploadSingleFile(file, progressItem) {
+            updateFileProgress(progressItem, 'processing', 'Verarbeite...');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/extract`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Upload error for', file.name, ':', errorData);
+                    
+                    let errorMessage = 'Fehler beim Verarbeiten';
+                    if (response.status === 422 && errorData.detail && errorData.detail.error) {
+                        errorMessage = errorData.detail.error;
+                    }
+                    
+                    return { success: false, error: errorMessage };
+                }
+                
+                const result = await response.json();
+                return { success: true, data: result };
+                
+            } catch (error) {
+                console.error('Error uploading file:', file.name, error);
+                return { success: false, error: 'Netzwerkfehler' };
+            }
+        }
+        
+        // Upload file with progress animation (for backwards compatibility)
+        async function uploadFile(file) {
+            // Show progress area
+            uploadArea.classList.add('hidden');
+            progressArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            
+            // Show single file progress
+            document.getElementById('singleFileProgress').classList.remove('hidden');
+            document.getElementById('multipleFilesProgress').classList.add('hidden');
+            
+            // Reset progress
+            updateProgress(0);
+            progressStatus.textContent = 'Datei wird vorbereitet...';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                // Simulate progress for demo (in production, use XMLHttpRequest for real progress)
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    updateProgress(progress);
+                    
+                    if (progress > 30) progressStatus.textContent = 'Datei wird hochgeladen...';
+                    if (progress > 60) progressStatus.textContent = 'OCR-Verarbeitung läuft...';
+                    if (progress > 80) progressStatus.textContent = 'Daten werden extrahiert...';
+                }, 300);
+                
+                const response = await fetch(`${API_BASE}/api/extract`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Upload error details:', errorData);
+                    
+                    if (response.status === 422 && errorData.detail) {
+                        // Handle detailed error response
+                        const detail = errorData.detail;
+                        let errorMessage = detail.error || 'Die Datei konnte nicht verarbeitet werden';
+                        
+                        if (detail.details) {
+                            errorMessage += '\n\n' + detail.details;
+                        }
+                        
+                        if (detail.suggestions && detail.suggestions.length > 0) {
+                            errorMessage += '\n\nVorschläge:\n• ' + detail.suggestions.join('\n• ');
+                        }
+                        
+                        showResult('error', 'OCR-Fehler', errorMessage);
+                    } else {
+                        showResult('error', 'Fehler', 'Die Datei konnte nicht verarbeitet werden');
+                    }
+                    return;
+                }
+                
+                updateProgress(100);
+                progressStatus.textContent = 'Verarbeitung abgeschlossen!';
+                
+                const result = await response.json();
+                
+                // Show success after short delay
+                setTimeout(() => {
+                    showResult('success', 'Erfolgreich verarbeitet!', 
+                        `Bestellnummer: ${result.bestellnummer || 'Nicht erkannt'}\n` +
+                        `Positionen gefunden: ${result.positionen ? result.positionen.length : 0}`
+                    );
+                    loadOrders();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                showResult('error', 'Fehler', 'Die Datei konnte nicht verarbeitet werden');
+            }
+        }
+        
+        // Update progress bar and circle
+        function updateProgress(percent) {
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = Math.round(percent) + '%';
+            
+            // Update circle progress
+            const circumference = 2 * Math.PI * 36;
+            const offset = circumference - (percent / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+        
+        // Show result in modal
+        function showResult(type, title, message) {
+            progressArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            
+            const resultIcon = document.getElementById('resultIcon');
+            const resultIconContent = document.getElementById('resultIconContent');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            if (type === 'success') {
+                resultIcon.className = 'w-20 h-20 bg-green-900 bg-opacity-50 rounded-full flex items-center justify-center mx-auto mb-4';
+                resultIconContent.className = 'fas fa-check text-green-400 text-3xl';
+            } else {
+                resultIcon.className = 'w-20 h-20 bg-red-900 bg-opacity-50 rounded-full flex items-center justify-center mx-auto mb-4';
+                resultIconContent.className = 'fas fa-times text-red-400 text-3xl';
+            }
+            
+            resultTitle.textContent = title;
+            resultMessage.textContent = message;
+        }
+        
+        // Check if positions have changed
+        function checkForChanges() {
+            if (!originalPositions || !currentPositions) {
+                hasUnsavedChanges = false;
+                return;
+            }
+            
+            // Compare current with original
+            hasUnsavedChanges = JSON.stringify(currentPositions) !== JSON.stringify(originalPositions);
+            updateSaveButton();
+        }
+        
+        // Update save button state
+        function updateSaveButton() {
+            const saveButton = document.getElementById('savePositions');
+            if (saveButton) {
+                saveButton.disabled = !hasUnsavedChanges;
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Select all checkbox
+            const selectAllOrders = document.getElementById('selectAllOrders');
+            if (selectAllOrders) {
+                selectAllOrders.addEventListener('change', (e) => {
+                    const checkboxes = document.querySelectorAll('.order-checkbox');
+                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                    updateSelectedOrders();
+                });
+            }
+            
+            // Document generation buttons
+            document.querySelectorAll('.document-action-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const docType = btn.dataset.docType;
+                    generateDocumentsForSelected(docType);
+                });
+            });
+            
+            // Delete selected button
+            const deleteSelectedBtn = document.getElementById('deleteSelected');
+            if (deleteSelectedBtn) {
+                deleteSelectedBtn.addEventListener('click', deleteSelectedOrders);
+            }
+            
+            // Single document buttons
+            document.querySelectorAll('.single-doc-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const docType = btn.dataset.docType;
+                    generatePDF(docType);
+                });
+            });
+            
+            // Floating progress window controls
+            const minimizeBtn = document.getElementById('minimizeProgress');
+            const closeProgressBtn = document.getElementById('closeProgress');
+            const floatingProgress = document.getElementById('floatingProgress');
+            
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('click', () => {
+                    floatingProgress.classList.toggle('minimized');
+                });
+            }
+            
+            if (closeProgressBtn) {
+                closeProgressBtn.addEventListener('click', () => {
+                    floatingProgress.classList.add('hidden');
+                });
+            }
+            
+            // Upload modal
+            uploadBtn.addEventListener('click', () => {
+                uploadModal.classList.remove('hidden');
+                uploadArea.classList.remove('hidden');
+                progressArea.classList.add('hidden');
+                resultArea.classList.add('hidden');
+                fileInput.value = '';
+            });
+            
+            closeUploadModal.addEventListener('click', () => {
+                uploadModal.classList.add('hidden');
+            });
+            
+            closeResultModal.addEventListener('click', () => {
+                uploadModal.classList.add('hidden');
+            });
+            
+            // File upload
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    if (e.target.files.length === 1) {
+                        uploadFile(e.target.files[0]);
+                    } else {
+                        processMultipleFiles(Array.from(e.target.files));
+                    }
+                }
+            });
+            
+            // Drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    if (files.length === 1) {
+                        uploadFile(files[0]);
+                    } else {
+                        processMultipleFiles(Array.from(files));
+                    }
+                }
+            });
+            
+            // Other buttons
+            refreshBtn.addEventListener('click', loadOrders);
+            closeDetails.addEventListener('click', () => orderDetails.classList.add('hidden'));
+            savePositions.addEventListener('click', savePositionsToAPI);
+            deleteOrder.addEventListener('click', deleteCurrentOrder);
+        }
+        
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function formatDateOnly(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+        
+        // Show notification (toast style)
+        function showNotification(type, title, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full z-50 glassmorphism`;
+            
+            if (type === 'success') {
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-400 mr-3"></i>
+                        <div>
+                            <h4 class="font-bold text-white">${title}</h4>
+                            <p class="text-sm text-gray-300">${message}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-400 mr-3"></i>
+                        <div>
+                            <h4 class="font-bold text-white">${title}</h4>
+                            <p class="text-sm text-gray-300">${message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Document History Functions
+        let currentHistoryFilter = '';
+        
+        // Load document history
+        async function loadDocumentHistory(bestellnummer = null) {
+            try {
+                console.log('Loading document history...', bestellnummer ? `for order ${bestellnummer}` : 'all orders');
+                let url = `${API_BASE}/api/document-history`;
+                if (bestellnummer) {
+                    url += `?bestellnummer=${bestellnummer}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to fetch history');
+                
+                const history = await response.json();
+                console.log('Loaded history:', history.length, 'entries');
+                
+                if (bestellnummer) {
+                    // Modal view for specific order
+                    displayModalHistory(history);
+                } else {
+                    // Global history view
+                    displayGlobalHistory(history);
+                }
+            } catch (error) {
+                console.error('Error loading document history:', error);
+                showNotification('error', 'Fehler', 'Konnte Dokumentenverlauf nicht laden');
+            }
+        }
+        
+        // Display global history
+        function displayGlobalHistory(history) {
+            console.log('Displaying global history with', history.length, 'entries');
+            const historyList = document.getElementById('historyList');
+            const emptyState = document.getElementById('historyEmptyState');
+            
+            if (!historyList || !emptyState) {
+                console.error('History elements not found:', { historyList, emptyState });
+                return;
+            }
+            
+            // Apply filter if set
+            if (currentHistoryFilter) {
+                history = history.filter(h => h.document_type === currentHistoryFilter);
+            }
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            historyList.innerHTML = history.map(h => {
+                const docNumber = h.metadata?.document_number || '';
+                return `
+                <tr class="hover:bg-dark-700 transition-colors history-row" data-history-id="${h.id}">
+                    <td class="py-3 px-4 text-center">
+                        <input type="checkbox" class="history-checkbox form-checkbox h-4 w-4 text-primary rounded" data-history-id="${h.id}">
+                    </td>
+                    <td class="py-3 px-4 text-sm">${formatDate(h.generated_at)}</td>
+                    <td class="py-3 px-4 text-sm">
+                        <a href="#" class="text-primary hover:text-secondary" onclick="showFloatingOrderDetails('${h.bestellnummer}'); return false;">
+                            ${h.bestellnummer}
+                        </a>
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs ${getDocumentTypeClass(h.document_type)}">
+                            ${getDocumentTypeName(h.document_type)}
+                        </span>
+                        ${docNumber ? `<span class="ml-2 text-gray-400 text-xs">${docNumber}</span>` : ''}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-400">${h.generated_by || 'System'}</td>
+                    <td class="py-3 px-4 text-sm">
+                        <button onclick="regenerateDocument(${h.id})" class="text-primary hover:text-secondary mr-2" title="Dokument erneut generieren">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button onclick="viewDocumentData(${h.id})" class="text-gray-400 hover:text-white mr-2" title="Daten anzeigen">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="deleteHistoryEntry(${h.id})" class="text-red-400 hover:text-red-300" title="Eintrag löschen">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+            
+            // Re-attach checkbox event listeners
+            updateHistoryCheckboxListeners();
+        }
+        
+        // Display modal history for specific order
+        function displayModalHistory(history) {
+            const modalHistoryList = document.getElementById('modalHistoryList');
+            const emptyState = document.getElementById('modalHistoryEmptyState');
+            
+            if (history.length === 0) {
+                modalHistoryList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            modalHistoryList.innerHTML = history.map(h => {
+                const docNumber = h.metadata?.document_number || '';
+                return `
+                <tr class="hover:bg-dark-700 transition-colors">
+                    <td class="py-3 px-4 text-sm">${formatDate(h.generated_at)}</td>
+                    <td class="py-3 px-4 text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs ${getDocumentTypeClass(h.document_type)}">
+                            ${getDocumentTypeName(h.document_type)}
+                        </span>
+                        ${docNumber ? `<span class="ml-2 text-gray-400 text-xs">${docNumber}</span>` : ''}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-400">${h.generated_by || 'System'}</td>
+                    <td class="py-3 px-4 text-sm">
+                        <span class="text-green-400"><i class="fas fa-check-circle"></i> Erstellt</span>
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                        <button onclick="regenerateDocument(${h.id})" class="text-primary hover:text-secondary mr-2" title="Dokument erneut generieren">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button onclick="viewDocumentData(${h.id})" class="text-gray-400 hover:text-white" title="Daten anzeigen">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+        
+        // Helper functions for document types
+        function getDocumentTypeClass(type) {
+            switch (type) {
+                case 'lieferschein':
+                    return 'bg-blue-500/20 text-blue-400';
+                case 'laufkarte':
+                    return 'bg-yellow-500/20 text-yellow-400';
+                case 'rechnung':
+                    return 'bg-green-500/20 text-green-400';
+                default:
+                    return 'bg-gray-500/20 text-gray-400';
+            }
+        }
+        
+        function getDocumentTypeName(type) {
+            switch (type) {
+                case 'lieferschein':
+                    return 'Lieferschein';
+                case 'laufkarte':
+                    return 'Laufkarte';
+                case 'rechnung':
+                    return 'Rechnung';
+                default:
+                    return type;
+            }
+        }
+        
+        // Regenerate document from history
+        async function regenerateDocument(historyId) {
+            try {
+                // Fetch history entry
+                const response = await fetch(`${API_BASE}/api/document-history/${historyId}`);
+                if (!response.ok) throw new Error('Failed to fetch history entry');
+                
+                const historyEntry = await response.json();
+                
+                // Generate PDF with stored data
+                await generatePDF(historyEntry.document_type, historyEntry.document_data);
+                
+                showNotification('success', 'Erfolg', 'Dokument wurde erneut generiert');
+            } catch (error) {
+                console.error('Error regenerating document:', error);
+                showNotification('error', 'Fehler', 'Konnte Dokument nicht erneut generieren');
+            }
+        }
+        
+        // View document data
+        async function viewDocumentData(historyId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/document-history/${historyId}`);
+                if (!response.ok) throw new Error('Failed to fetch history entry');
+                
+                const historyEntry = await response.json();
+                const data = historyEntry.document_data || {};
+                const metadata = historyEntry.metadata || {};
+                
+                // Create positions table HTML
+                let positionsHtml = '';
+                if (data.positionen && data.positionen.length > 0) {
+                    positionsHtml = `
+                        <h4 class="font-medium text-white mb-3">Positionen</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-dark-800 border-b border-dark-600">
+                                        <th class="py-2 px-3 text-left text-gray-400">Pos</th>
+                                        <th class="py-2 px-3 text-left text-gray-400">Auftrag</th>
+                                        <th class="py-2 px-3 text-left text-gray-400">Beschreibung</th>
+                                        <th class="py-2 px-3 text-left text-gray-400">Menge</th>
+                                        <th class="py-2 px-3 text-left text-gray-400">Preis</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.positionen.map(pos => `
+                                        <tr class="border-b border-dark-700">
+                                            <td class="py-2 px-3">${pos.pos_nr || ''}</td>
+                                            <td class="py-2 px-3">${pos.auftrag || ''}</td>
+                                            <td class="py-2 px-3">${pos.beschreibung || ''}</td>
+                                            <td class="py-2 px-3">${pos.menge || ''}</td>
+                                            <td class="py-2 px-3">${pos.preis ? pos.preis + ' €' : ''}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                // Create modal to show data
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="glassmorphism rounded-xl shadow-2xl p-6 w-full max-w-4xl max-h-[80vh] overflow-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Dokumentdaten</h3>
+                                <p class="text-sm text-gray-400 mt-1">
+                                    ${getDocumentTypeName(historyEntry.document_type)} 
+                                    ${metadata.document_number ? `- ${metadata.document_number}` : ''}
+                                </p>
+                            </div>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-200">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Order Information -->
+                        <div class="bg-dark-800 rounded-lg p-4 mb-4">
+                            <h4 class="font-medium text-white mb-3">Bestellinformationen</h4>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-400">Bestellnummer:</span>
+                                    <a href="#" class="ml-2 text-primary hover:text-secondary" 
+                                       onclick="this.closest('.fixed').remove(); showOrderDetails('${data.bestellnummer}'); return false;">
+                                        ${data.bestellnummer || '-'}
+                                    </a>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Datum:</span>
+                                    <span class="ml-2">${data.datum || '-'}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Generiert am:</span>
+                                    <span class="ml-2">${formatDate(historyEntry.generated_at)}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Dokumenttyp:</span>
+                                    <span class="ml-2">${getDocumentTypeName(historyEntry.document_type)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Positions Table -->
+                        ${positionsHtml}
+                        
+                        <!-- Raw Data (collapsible) -->
+                        <details class="mt-4">
+                            <summary class="cursor-pointer text-gray-400 hover:text-white text-sm">
+                                <i class="fas fa-code mr-2"></i>Rohdaten anzeigen
+                            </summary>
+                            <pre class="bg-dark-800 p-4 rounded-lg text-xs text-gray-300 overflow-auto mt-2">${JSON.stringify(historyEntry, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } catch (error) {
+                console.error('Error viewing document data:', error);
+                showNotification('error', 'Fehler', 'Konnte Dokumentdaten nicht laden');
+            }
+        }
+        
+        // Delete history entry
+        async function deleteHistoryEntry(historyId) {
+            if (!confirm('Möchten Sie diesen Verlaufseintrag wirklich löschen?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/document-history/${historyId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete history entry');
+                
+                showNotification('success', 'Gelöscht', 'Verlaufseintrag wurde gelöscht');
+                
+                // Reload history
+                if (document.getElementById('documentHistory').classList.contains('hidden')) {
+                    const bestellnummer = currentOrder?.bestellnummer || currentOrder;
+                    loadDocumentHistory(bestellnummer);
+                } else {
+                    loadDocumentHistory();
+                }
+            } catch (error) {
+                console.error('Error deleting history entry:', error);
+                showNotification('error', 'Fehler', 'Konnte Verlaufseintrag nicht löschen');
+            }
+        }
+        
+        // Event listeners for history
+        document.getElementById('showOrderHistory').addEventListener('click', () => {
+            const bestellnummer = currentOrder?.bestellnummer || currentOrder;
+            document.getElementById('modalOrderNumber').textContent = bestellnummer;
+            document.getElementById('orderHistoryModal').classList.remove('hidden');
+            loadDocumentHistory(bestellnummer);
+        });
+        
+        document.getElementById('closeOrderHistoryModal').addEventListener('click', () => {
+            document.getElementById('orderHistoryModal').classList.add('hidden');
+        });
+        
+        document.getElementById('historyFilter').addEventListener('change', (e) => {
+            currentHistoryFilter = e.target.value;
+            loadDocumentHistory();
+        });
+        
+        document.getElementById('refreshHistory').addEventListener('click', () => {
+            loadDocumentHistory();
+        });
+        
+        // Update navigation to handle Verlauf link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const target = e.currentTarget.getAttribute('data-target');
+                
+                if (target === 'history') {
+                    // Show history section
+                    document.querySelector('.glassmorphism.rounded-xl.shadow-soft.p-6.mb-6').classList.add('hidden');
+                    document.getElementById('orderDetails').classList.add('hidden');
+                    document.getElementById('documentHistory').classList.remove('hidden');
+                    // Clear any existing selection
+                    selectedHistoryItems.clear();
+                    updateHistorySelection();
+                    loadDocumentHistory();
+                } else if (target === 'orders') {
+                    // Show orders section
+                    document.querySelector('.glassmorphism.rounded-xl.shadow-soft.p-6.mb-6').classList.remove('hidden');
+                    document.getElementById('orderDetails').classList.add('hidden');
+                    document.getElementById('documentHistory').classList.add('hidden');
+                }
+                
+                // Update active state
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            });
+        });
+        
+        // History checkbox management
+        let selectedHistoryItems = new Set();
+        
+        function updateHistoryCheckboxListeners() {
+            // Individual checkboxes
+            document.querySelectorAll('.history-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const historyId = e.target.dataset.historyId;
+                    if (e.target.checked) {
+                        selectedHistoryItems.add(historyId);
+                    } else {
+                        selectedHistoryItems.delete(historyId);
+                    }
+                    updateHistorySelection();
+                });
+            });
+        }
+        
+        function updateHistorySelection() {
+            const count = selectedHistoryItems.size;
+            const countElement = document.querySelector('.selected-history-count');
+            const selectedCountElement = document.getElementById('selectedHistoryCount');
+            const deleteButton = document.getElementById('deleteSelectedHistory');
+            
+            if (count > 0) {
+                countElement.textContent = count;
+                selectedCountElement.classList.remove('hidden');
+                deleteButton.classList.remove('hidden');
+                deleteButton.disabled = false;
+            } else {
+                selectedCountElement.classList.add('hidden');
+                deleteButton.classList.add('hidden');
+                deleteButton.disabled = true;
+            }
+            
+            // Update select all checkbox
+            const selectAllCheckbox = document.getElementById('selectAllHistory');
+            const allCheckboxes = document.querySelectorAll('.history-checkbox');
+            if (allCheckboxes.length > 0) {
+                selectAllCheckbox.checked = selectedHistoryItems.size === allCheckboxes.length;
+                selectAllCheckbox.indeterminate = selectedHistoryItems.size > 0 && selectedHistoryItems.size < allCheckboxes.length;
+            }
+        }
+        
+        // Select all history checkbox
+        document.getElementById('selectAllHistory').addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.history-checkbox');
+            selectedHistoryItems.clear();
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+                if (e.target.checked) {
+                    selectedHistoryItems.add(checkbox.dataset.historyId);
+                }
+            });
+            
+            updateHistorySelection();
+        });
+        
+        // Delete selected history entries
+        document.getElementById('deleteSelectedHistory').addEventListener('click', async () => {
+            if (selectedHistoryItems.size === 0) return;
+            
+            const count = selectedHistoryItems.size;
+            if (!confirm(`Möchten Sie ${count} Verlaufseinträge wirklich löschen?`)) return;
+            
+            try {
+                // Delete all selected items
+                const deletePromises = Array.from(selectedHistoryItems).map(historyId => 
+                    fetch(`${API_BASE}/api/document-history/${historyId}`, {
+                        method: 'DELETE'
+                    })
+                );
+                
+                await Promise.all(deletePromises);
+                
+                showNotification('success', 'Gelöscht', `${count} Verlaufseinträge wurden gelöscht`);
+                
+                // Clear selection and reload
+                selectedHistoryItems.clear();
+                updateHistorySelection();
+                loadDocumentHistory();
+            } catch (error) {
+                console.error('Error deleting history entries:', error);
+                showNotification('error', 'Fehler', 'Konnte Verlaufseinträge nicht löschen');
+            }
+        });
+    </script>
+</body>
+</html>

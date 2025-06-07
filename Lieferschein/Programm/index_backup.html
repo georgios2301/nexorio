@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DZMetall Lieferschein Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2F80ED',
+                        secondary: '#4F4F4F',
+                        accent: '#FF6B35',
+                        background: '#F8FAFC',
+                        card: '#FFFFFF'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            background-color: rgba(241, 245, 249, 0.5);
+        }
+        
+        .dropzone:hover, .dropzone.dragover {
+            border-color: #2F80ED;
+            background-color: rgba(47, 128, 237, 0.05);
+        }
+        
+        .order-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #2F80ED;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        
+        .document-button {
+            transition: all 0.2s ease;
+        }
+        
+        .document-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .position-row {
+            transition: background-color 0.2s ease;
+        }
+        
+        .position-row:hover {
+            background-color: #f9fafb;
+        }
+        
+        .editable-cell {
+            cursor: text;
+            position: relative;
+        }
+        
+        .editable-cell:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .editable-cell input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            padding: 0.25rem;
+        }
+        
+        .editable-cell input:focus {
+            outline: 2px solid #2F80ED;
+            background: white;
+        }
+    </style>
+</head>
+<body class="bg-background font-sans text-secondary min-h-screen">
+    <!-- Header -->
+    <header class="bg-primary text-white shadow-md">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-truck-loading text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">DZMetall Lieferschein Manager</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="uploadBtn" class="bg-white text-primary px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-upload"></i>
+                        <span>Lieferschein hochladen</span>
+                    </button>
+                    <div class="hidden md:flex items-center space-x-2">
+                        <i class="fas fa-server"></i>
+                        <span id="serverStatus" class="text-sm">Backend: <span class="text-yellow-300">Prüfe...</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 gap-6">
+            <!-- Order List -->
+            <div>
+                <div class="bg-card rounded-xl shadow-md p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                        <h2 class="text-xl font-bold mb-2 md:mb-0 text-primary flex items-center">
+                            <i class="fas fa-list mr-2"></i> Bestellungen
+                        </h2>
+                        
+                        <div class="flex space-x-2">
+                            <button id="refreshBtn" class="bg-gray-100 hover:bg-gray-200 py-2 px-3 rounded-lg flex items-center">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">Bestellnummer</th>
+                                    <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">Erstellt am</th>
+                                    <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderList">
+                                <!-- Orders will be loaded from API -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="emptyState" class="hidden text-center py-8">
+                        <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">Keine Bestellungen vorhanden</p>
+                    </div>
+                </div>
+                
+                <!-- Order Details Section - Initially Hidden -->
+                <div id="orderDetails" class="hidden fade-in mt-6 bg-card rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 id="orderId" class="text-xl font-bold text-primary"></h3>
+                            <p id="orderDate" class="text-sm text-gray-500"></p>
+                        </div>
+                        <button id="closeDetails" class="text-gray-400 hover:text-gray-600 text-xl focus:outline-none">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Positions Table -->
+                    <h4 class="font-medium mb-4">Positionen</h4>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="py-2 px-3 text-left">Pos</th>
+                                    <th class="py-2 px-3 text-left">Auftrag</th>
+                                    <th class="py-2 px-3 text-left">Beschreibung</th>
+                                    <th class="py-2 px-3 text-left">Vorgang</th>
+                                    <th class="py-2 px-3 text-left">Menge</th>
+                                    <th class="py-2 px-3 text-left">Preis</th>
+                                    <th class="py-2 px-3 text-left">Modell</th>
+                                    <th class="py-2 px-3 text-left">F/V</th>
+                                    <th class="py-2 px-3 text-left">Werkstoff</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsTable">
+                                <!-- Positions will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="savePositions" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center">
+                            <i class="fas fa-save mr-2"></i> Änderungen speichern
+                        </button>
+                        <span id="saveStatus" class="text-sm text-gray-500"></span>
+                    </div>
+                    
+                    <h4 class="font-medium mb-4">Dokumente erstellen</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Lieferschein Button -->
+                        <button class="document-button" data-doc-type="lieferschein" class="bg-blue-50 hover:bg-blue-100 rounded-lg p-5 flex flex-col items-center justify-center border border-blue-100">
+                            <i class="fas fa-clipboard-list text-3xl text-primary mb-2"></i>
+                            <span class="font-medium mb-1">Lieferschein</span>
+                            <span class="text-xs text-primary">PDF erstellen</span>
+                        </button>
+                        
+                        <!-- Laufkarte Button -->
+                        <button class="document-button" data-doc-type="laufkarte" class="bg-yellow-50 hover:bg-yellow-100 rounded-lg p-5 flex flex-col items-center justify-center border border-yellow-100">
+                            <i class="fas fa-map-marked-alt text-3xl text-yellow-500 mb-2"></i>
+                            <span class="font-medium mb-1">Laufkarte</span>
+                            <span class="text-xs text-yellow-700">PDF erstellen</span>
+                        </button>
+                        
+                        <!-- Rechnung Button -->
+                        <button class="document-button" data-doc-type="rechnung" class="bg-green-50 hover:bg-green-100 rounded-lg p-5 flex flex-col items-center justify-center border border-green-100">
+                            <i class="fas fa-file-invoice-dollar text-3xl text-green-500 mb-2"></i>
+                            <span class="font-medium mb-1">Rechnung</span>
+                            <span class="text-xs text-green-700">PDF erstellen</span>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h4 class="font-medium mb-4">Aktionen</h4>
+                        <div class="flex space-x-3">
+                            <button id="deleteOrder" class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 py-2 px-4 rounded-lg flex items-center">
+                                <i class="fas fa-trash-alt mr-2"></i> Bestellung löschen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-8 py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-sm text-gray-600 mb-4 md:mb-0">
+                    © 2025 DZMetall GmbH | Lieferschein Management System
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Lieferschein hochladen</h3>
+                <button id="closeUploadModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Upload Area -->
+            <div id="uploadArea" class="mb-6">
+                <div id="dropZone" class="dropzone cursor-pointer p-12 mb-4 flex flex-col items-center justify-center relative">
+                    <i class="fas fa-cloud-upload-alt text-5xl text-primary mb-3"></i>
+                    <p class="font-medium text-center text-lg">Datei hier ablegen</p>
+                    <p class="text-sm text-gray-500 mt-1">oder klicken zum Auswählen</p>
+                    <p class="text-xs text-gray-400 mt-2">PDF, JPG, PNG (max. 10MB)</p>
+                </div>
+                <input type="file" id="fileInput" class="hidden" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+            
+            <!-- Progress Area (hidden by default) -->
+            <div id="progressArea" class="hidden">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="relative">
+                        <svg class="w-24 h-24 transform -rotate-90">
+                            <circle cx="48" cy="48" r="36" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                            <circle id="progressCircle" cx="48" cy="48" r="36" stroke="#2F80ED" stroke-width="8" fill="none"
+                                    stroke-dasharray="226.2" stroke-dashoffset="226.2" class="transition-all duration-500"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="progressPercent" class="text-2xl font-bold text-primary">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <p id="progressStatus" class="text-center text-gray-600 mb-2">Datei wird hochgeladen...</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                    <div id="progressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Result Area (hidden by default) -->
+            <div id="resultArea" class="hidden text-center">
+                <div id="resultIcon" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i id="resultIconContent" class="text-3xl"></i>
+                </div>
+                <h4 id="resultTitle" class="text-lg font-bold mb-2"></h4>
+                <p id="resultMessage" class="text-gray-600 mb-4"></p>
+                <button id="closeResultModal" class="bg-primary hover:bg-blue-600 text-white py-2 px-6 rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API configuration
+        const API_BASE = 'http://localhost:8001';
+        const PDF_API_BASE = 'http://localhost:4000';
+        
+        // State
+        let currentOrder = null;
+        let currentPositions = [];
+        let hasUnsavedChanges = false;
+        
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const orderList = document.getElementById('orderList');
+        const orderDetails = document.getElementById('orderDetails');
+        const closeDetails = document.getElementById('closeDetails');
+        const orderIdElement = document.getElementById('orderId');
+        const orderDateElement = document.getElementById('orderDate');
+        const uploadModal = document.getElementById('uploadModal');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const savePositions = document.getElementById('savePositions');
+        const deleteOrder = document.getElementById('deleteOrder');
+        const positionsTable = document.getElementById('positionsTable');
+        const saveStatus = document.getElementById('saveStatus');
+        const serverStatus = document.getElementById('serverStatus');
+        const emptyState = document.getElementById('emptyState');
+        
+        // New modal elements
+        const uploadBtn = document.getElementById('uploadBtn');
+        const closeUploadModal = document.getElementById('closeUploadModal');
+        const uploadArea = document.getElementById('uploadArea');
+        const progressArea = document.getElementById('progressArea');
+        const resultArea = document.getElementById('resultArea');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressCircle = document.getElementById('progressCircle');
+        const progressStatus = document.getElementById('progressStatus');
+        const closeResultModal = document.getElementById('closeResultModal');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServerStatus();
+            loadOrders();
+            setupEventListeners();
+        });
+        
+        // Check server status
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    serverStatus.innerHTML = 'Backend: <span class="text-green-300">Online</span>';
+                } else {
+                    serverStatus.innerHTML = 'Backend: <span class="text-red-300">Offline</span>';
+                }
+            } catch (error) {
+                serverStatus.innerHTML = 'Backend: <span class="text-red-300">Offline</span>';
+            }
+        }
+        
+        // Load orders from API
+        async function loadOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/api/orders`);
+                if (!response.ok) throw new Error('Failed to load orders');
+                
+                const orders = await response.json();
+                displayOrders(orders);
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showNotification('error', 'Fehler', 'Bestellungen konnten nicht geladen werden');
+            }
+        }
+        
+        // Display orders in table
+        function displayOrders(orders) {
+            orderList.innerHTML = '';
+            
+            if (orders.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.className = 'order-row border-b cursor-pointer hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="py-4 px-4 font-medium">${order.bestellnummer}</td>
+                    <td class="py-4 px-4">${formatDate(order.created_at)}</td>
+                    <td class="py-4 px-4">
+                        <div class="flex space-x-3">
+                            <button class="view-order text-primary hover:text-blue-700 focus:outline-none" title="Anzeigen">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="delete-order text-red-500 hover:text-red-700 focus:outline-none" title="Löschen" data-bestellnummer="${order.bestellnummer}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                // Add click event for view button
+                const viewBtn = row.querySelector('.view-order');
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showOrderDetails(order);
+                });
+                
+                // Add click event for delete button
+                const deleteBtn = row.querySelector('.delete-order');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteOrderFromList(order.bestellnummer);
+                });
+                
+                // Click on row also shows details (except on buttons)
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        showOrderDetails(order);
+                    }
+                });
+                
+                orderList.appendChild(row);
+            });
+        }
+        
+        // Show order details
+        async function showOrderDetails(order) {
+            currentOrder = order;
+            orderIdElement.textContent = order.bestellnummer;
+            orderDateElement.textContent = `Erstellt am: ${formatDate(order.created_at)}`;
+            
+            // Load positions
+            try {
+                const response = await fetch(`${API_BASE}/api/positions?bestellnummer=${order.bestellnummer}`);
+                if (!response.ok) throw new Error('Failed to load positions');
+                
+                currentPositions = await response.json();
+                console.log('Loaded positions from server:', currentPositions); // Debug log
+                displayPositions(currentPositions);
+                
+                orderDetails.classList.remove('hidden');
+                orderDetails.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                console.error('Error loading positions:', error);
+                showNotification('error', 'Fehler', 'Positionen konnten nicht geladen werden');
+            }
+        }
+        
+        // Display positions in table
+        function displayPositions(positions) {
+            positionsTable.innerHTML = '';
+            
+            positions.forEach((position, index) => {
+                const row = document.createElement('tr');
+                row.className = 'position-row border-b';
+                row.innerHTML = `
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="pos_nr" data-index="${index}">
+                            ${position.pos_nr || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="auftrag" data-index="${index}">
+                            ${position.auftrag || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="beschreibung" data-index="${index}">
+                            ${position.beschreibung || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="vorgang" data-index="${index}">
+                            ${position.vorgang || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="menge" data-index="${index}">
+                            ${position.menge || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="preis" data-index="${index}">
+                            ${position.preis ? position.preis.toFixed(2) : '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="modellnummer" data-index="${index}">
+                            ${position.modellnummer || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="fv" data-index="${index}">
+                            ${position.fv || '-'}
+                        </div>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="editable-cell" data-field="werkstoff" data-index="${index}">
+                            ${position.werkstoff || '-'}
+                        </div>
+                    </td>
+                `;
+                positionsTable.appendChild(row);
+            });
+            
+            // Make cells editable
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('click', makeEditable);
+            });
+        }
+        
+        // Make cell editable
+        function makeEditable(event) {
+            const cell = event.currentTarget;
+            const field = cell.dataset.field;
+            const index = parseInt(cell.dataset.index);
+            const currentValue = currentPositions[index][field] || '';
+            
+            const input = document.createElement('input');
+            input.type = field === 'menge' || field === 'preis' ? 'number' : 'text';
+            input.value = currentValue;
+            input.className = 'w-full px-2 py-1';
+            
+            input.addEventListener('blur', () => {
+                const newValue = input.value;
+                if (field === 'menge' || field === 'preis') {
+                    currentPositions[index][field] = newValue ? parseFloat(newValue) : null;
+                } else {
+                    currentPositions[index][field] = newValue || null;
+                }
+                hasUnsavedChanges = true;
+                saveStatus.textContent = 'Ungespeicherte Änderungen';
+                saveStatus.className = 'text-sm text-yellow-600';
+                displayPositions(currentPositions);
+            });
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            });
+            
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+        }
+        
+        // Save positions
+        async function savePositionsToAPI() {
+            if (!hasUnsavedChanges) return;
+            
+            try {
+                saveStatus.textContent = 'Speichere...';
+                saveStatus.className = 'text-sm text-blue-600';
+                
+                const updateData = currentPositions.map(pos => {
+                    console.log('Original position:', pos); // Debug log
+                    const data = {
+                        bestellnummer: currentOrder.bestellnummer,
+                        pos_nr: pos.pos_nr,
+                        auftrag: pos.auftrag,
+                        beschreibung: pos.beschreibung,
+                        vorgang: pos.vorgang,
+                        preis: pos.preis,
+                        menge: pos.menge,
+                        modellnummer: pos.modellnummer,
+                        fv: pos.fv,
+                        werkstoff: pos.werkstoff
+                    };
+                    
+                    console.log('Data to send:', data); // Debug log
+                    return data;
+                });
+                
+                console.log('Sending positions:', updateData);
+                
+                const response = await fetch(`${API_BASE}/api/positions/batch`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error:', errorData);
+                    throw new Error(errorData.detail || 'Failed to save positions');
+                }
+                
+                hasUnsavedChanges = false;
+                saveStatus.textContent = 'Gespeichert!';
+                saveStatus.className = 'text-sm text-green-600';
+                
+                setTimeout(() => {
+                    saveStatus.textContent = '';
+                }, 3000);
+            } catch (error) {
+                console.error('Error saving positions:', error);
+                saveStatus.textContent = 'Fehler beim Speichern';
+                saveStatus.className = 'text-sm text-red-600';
+            }
+        }
+        
+        // Delete order from list
+        async function deleteOrderFromList(bestellnummer) {
+            if (!confirm(`Möchten Sie die Bestellung ${bestellnummer} wirklich löschen?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/orders/${bestellnummer}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete order');
+                
+                // Hide details if this order was shown
+                if (currentOrder && currentOrder.bestellnummer === bestellnummer) {
+                    orderDetails.classList.add('hidden');
+                    currentOrder = null;
+                }
+                
+                // Reload orders list
+                loadOrders();
+                
+                // Show success notification
+                showNotification('success', 'Bestellung gelöscht', `Bestellung ${bestellnummer} wurde erfolgreich gelöscht`);
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                showNotification('error', 'Fehler', 'Die Bestellung konnte nicht gelöscht werden');
+            }
+        }
+        
+        // Delete current order (from detail view)
+        async function deleteCurrentOrder() {
+            if (!currentOrder) return;
+            deleteOrderFromList(currentOrder.bestellnummer);
+        }
+        
+        // Generate PDF
+        async function generatePDF(docType) {
+            try {
+                const response = await fetch(`${PDF_API_BASE}/generate-pdf`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        docType: docType,
+                        data: {
+                            bestellnummer: currentOrder.bestellnummer,
+                            datum: formatDateOnly(currentOrder.created_at),
+                            positionen: currentPositions
+                        }
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to generate PDF');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('error', 'Fehler', 'PDF konnte nicht erstellt werden. Ist der PDF-Server gestartet?');
+            }
+        }
+        
+        // Upload file with progress animation
+        async function uploadFile(file) {
+            // Show progress area
+            uploadArea.classList.add('hidden');
+            progressArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            
+            // Reset progress
+            updateProgress(0);
+            progressStatus.textContent = 'Datei wird vorbereitet...';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                // Simulate progress for demo (in production, use XMLHttpRequest for real progress)
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    updateProgress(progress);
+                    
+                    if (progress > 30) progressStatus.textContent = 'Datei wird hochgeladen...';
+                    if (progress > 60) progressStatus.textContent = 'OCR-Verarbeitung läuft...';
+                    if (progress > 80) progressStatus.textContent = 'Daten werden extrahiert...';
+                }, 300);
+                
+                const response = await fetch(`${API_BASE}/api/extract`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                updateProgress(100);
+                progressStatus.textContent = 'Verarbeitung abgeschlossen!';
+                
+                if (!response.ok) throw new Error('Failed to process file');
+                
+                const result = await response.json();
+                
+                // Show success after short delay
+                setTimeout(() => {
+                    showResult('success', 'Erfolgreich verarbeitet!', 
+                        `Bestellnummer: ${result.bestellnummer || 'Nicht erkannt'}\n` +
+                        `Positionen gefunden: ${result.positionen ? result.positionen.length : 0}`
+                    );
+                    loadOrders();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                showResult('error', 'Fehler', 'Die Datei konnte nicht verarbeitet werden');
+            }
+        }
+        
+        // Update progress bar and circle
+        function updateProgress(percent) {
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = Math.round(percent) + '%';
+            
+            // Update circle progress
+            const circumference = 2 * Math.PI * 36;
+            const offset = circumference - (percent / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+        
+        // Show result in modal
+        function showResult(type, title, message) {
+            progressArea.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            
+            const resultIcon = document.getElementById('resultIcon');
+            const resultIconContent = document.getElementById('resultIconContent');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            if (type === 'success') {
+                resultIcon.className = 'w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4';
+                resultIconContent.className = 'fas fa-check text-green-600 text-3xl';
+            } else {
+                resultIcon.className = 'w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4';
+                resultIconContent.className = 'fas fa-times text-red-600 text-3xl';
+            }
+            
+            resultTitle.textContent = title;
+            resultMessage.textContent = message;
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Upload modal
+            uploadBtn.addEventListener('click', () => {
+                uploadModal.classList.remove('hidden');
+                uploadArea.classList.remove('hidden');
+                progressArea.classList.add('hidden');
+                resultArea.classList.add('hidden');
+                fileInput.value = '';
+            });
+            
+            closeUploadModal.addEventListener('click', () => {
+                uploadModal.classList.add('hidden');
+            });
+            
+            closeResultModal.addEventListener('click', () => {
+                uploadModal.classList.add('hidden');
+            });
+            
+            // File upload
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    uploadFile(e.target.files[0]);
+                }
+            });
+            
+            // Drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    uploadFile(files[0]);
+                }
+            });
+            
+            // Other buttons
+            refreshBtn.addEventListener('click', loadOrders);
+            closeDetails.addEventListener('click', () => orderDetails.classList.add('hidden'));
+            savePositions.addEventListener('click', savePositionsToAPI);
+            deleteOrder.addEventListener('click', deleteCurrentOrder);
+            
+            // Document buttons
+            document.querySelectorAll('.document-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const docType = btn.getAttribute('data-doc-type');
+                    generatePDF(docType);
+                });
+            });
+        }
+        
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function formatDateOnly(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+        
+        // Show notification (toast style)
+        function showNotification(type, title, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full z-50`;
+            
+            if (type === 'success') {
+                notification.className += ' bg-green-100 border border-green-400 text-green-700';
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                        <div>
+                            <h4 class="font-bold">${title}</h4>
+                            <p class="text-sm">${message}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                notification.className += ' bg-red-100 border border-red-400 text-red-700';
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                        <div>
+                            <h4 class="font-bold">${title}</h4>
+                            <p class="text-sm">${message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
