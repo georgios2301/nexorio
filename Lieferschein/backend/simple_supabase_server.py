@@ -426,9 +426,30 @@ async def delete_order(bestellnummer: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/document-history")
-async def create_document_history(history: DocumentHistory):
+async def create_document_history(request: Request):
     """Record a new document generation event"""
     try:
+        # Get raw body for debugging
+        body = await request.body()
+        print(f"[DEBUG] Raw body: {body}")
+        
+        # Parse JSON
+        try:
+            data = json.loads(body)
+            print(f"[DEBUG] Parsed data: {data}")
+        except json.JSONDecodeError as e:
+            print(f"[DEBUG] JSON decode error: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+        
+        # Validate required fields
+        if not data.get('bestellnummer'):
+            raise HTTPException(status_code=400, detail="bestellnummer is required")
+        if not data.get('document_type'):
+            raise HTTPException(status_code=400, detail="document_type is required")
+        
+        # Create history object
+        history = DocumentHistory(**data)
+        
         async with httpx.AsyncClient() as client:
             # Prepare data for insertion
             history_data = {
