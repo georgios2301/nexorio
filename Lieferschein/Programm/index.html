@@ -707,7 +707,7 @@
             : 'http://localhost:8001';
         const PDF_API_BASE = isProduction 
             ? 'https://nexorio-backend.onrender.com'
-            : 'http://localhost:4000';
+            : 'http://localhost:8001';
         
         // State
         let currentOrder = null;
@@ -1487,6 +1487,29 @@
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 window.open(url, '_blank');
+                
+                // Save document history
+                try {
+                    await fetch(`${API_BASE}/api/document-history`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            bestellnummer: orderData.bestellnummer,
+                            document_type: docType,
+                            generated_by: 'User',
+                            document_data: {
+                                bestellnummer: orderData.bestellnummer,
+                                datum: formatDateOnly(new Date()),
+                                positionen: orderData.positionen
+                            }
+                        })
+                    });
+                } catch (historyError) {
+                    console.error('Failed to save document history:', historyError);
+                    // Don't show error to user - history is not critical
+                }
             } catch (error) {
                 console.error('Error generating PDF:', error);
                 throw error;
@@ -1516,6 +1539,33 @@
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 window.open(url, '_blank');
+                
+                // Save document history
+                try {
+                    await fetch(`${API_BASE}/api/document-history`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            bestellnummer: currentOrder.bestellnummer,
+                            document_type: docType,
+                            generated_by: 'User',
+                            document_data: {
+                                bestellnummer: currentOrder.bestellnummer,
+                                datum: formatDateOnly(currentOrder.created_at),
+                                positionen: currentPositions
+                            }
+                        })
+                    });
+                    // Reload history if on history page
+                    if (window.location.hash === '#verlauf') {
+                        loadDocumentHistory();
+                    }
+                } catch (historyError) {
+                    console.error('Failed to save document history:', historyError);
+                    // Don't show error to user - history is not critical
+                }
             } catch (error) {
                 console.error('Error generating PDF:', error);
                 showNotification('error', 'Fehler', 'PDF konnte nicht erstellt werden. Ist der PDF-Server gestartet?');

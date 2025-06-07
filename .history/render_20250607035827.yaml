@@ -1,0 +1,40 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: nexorio-backend
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "python start_services.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        value: https://hqxljqekbekkwmkqrtjo.supabase.co
+      - key: SUPABASE_KEY
+        sync: false  # Set this in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: RENDER
+        value: true
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # Static Site for Frontend
+  - type: web
+    name: nexorio-frontend
+    runtime: static
+    buildCommand: "echo 'No build needed'"
+    staticPublishPath: ./Lieferschein/Programm
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /
+        destination: /index.html
