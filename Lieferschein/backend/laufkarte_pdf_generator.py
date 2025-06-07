@@ -51,31 +51,32 @@ def generate_laufkarte_direct(data: Dict[str, Any]) -> str:
     # Column definitions with positions
     columns = [
         {'name': 'Pos/Auftrag', 'x': x_margins, 'width': 80},
-        {'name': 'Bezeichnung', 'x': x_margins + 80, 'width': 200},
-        {'name': 'F/V', 'x': x_margins + 280, 'width': 40},
-        {'name': 'Stk', 'x': x_margins + 320, 'width': 40},
-        {'name': 'Werkstoff', 'x': x_margins + 360, 'width': 100},
-        {'name': 'Modellnummer', 'x': x_margins + 460, 'width': 80}
+        {'name': 'Bezeichnung', 'x': x_margins + 80, 'width': 180},
+        {'name': 'F/V', 'x': x_margins + 260, 'width': 30},
+        {'name': 'Stk', 'x': x_margins + 290, 'width': 30},
+        {'name': 'Werkstoff', 'x': x_margins + 320, 'width': 90},
+        {'name': 'Modellnummer', 'x': x_margins + 410, 'width': 80}
     ]
     
     # Draw table headers
     c.setFont(BOLD_FONT, 10)
-    c.setFillColor(HexColor('#333333'))
     
     # Header background
     c.setFillColor(HexColor('#f0f0f0'))
-    c.rect(x_margins - 5, y_start - 15, width - 2*x_margins + 10, 20, fill=1, stroke=1)
+    c.setStrokeColor(black)
+    header_height = 25
+    # Calculate total width based on last column
+    total_width = columns[-1]['x'] + columns[-1]['width'] - x_margins + 10
+    c.rect(x_margins - 5, y_start - 5, total_width, header_height, fill=1, stroke=1)
     
-    # Header text
+    # Header text (positioned in the middle of the header box)
     c.setFillColor(black)
+    text_y = y_start + (header_height / 2) - 4  # Center text vertically
     for col in columns:
-        c.drawString(col['x'], y_start, col['name'])
+        c.drawString(col['x'], text_y, col['name'])
     
-    # Draw horizontal line under headers
-    c.line(x_margins - 5, y_start - 5, width - x_margins + 5, y_start - 5)
-    
-    # Table content
-    y = y_start - 30
+    # Table content (start below the header box)
+    y = y_start - 35  # Adjusted to start below header
     c.setFont(DEFAULT_FONT, 10)
     
     positions = data.get('positionen', [])
@@ -90,16 +91,17 @@ def generate_laufkarte_direct(data: Dict[str, Any]) -> str:
             
             # Header background
             c.setFillColor(HexColor('#f0f0f0'))
-            c.rect(x_margins - 5, y + 15, width - 2*x_margins + 10, 20, fill=1, stroke=1)
+            c.setStrokeColor(black)
+            c.rect(x_margins - 5, y - 5, total_width, header_height, fill=1, stroke=1)
             
-            # Header text
+            # Header text (positioned in the middle of the header box)
             c.setFillColor(black)
+            text_y = y + (header_height / 2) - 4  # Center text vertically
             for col in columns:
-                c.drawString(col['x'], y + 20, col['name'])
+                c.drawString(col['x'], text_y, col['name'])
             
-            c.line(x_margins - 5, y + 10, width - x_margins + 5, y + 10)
             c.setFont(DEFAULT_FONT, 10)
-            y = y - 20
+            y = y - 35  # Start content below header
         
         # Pos/Auftrag column (Pos number and Auftrag on same column)
         pos_nr = str(pos.get('pos_nr', ''))
@@ -138,7 +140,7 @@ def generate_laufkarte_direct(data: Dict[str, Any]) -> str:
         
         # Draw horizontal line between rows
         c.setStrokeColor(HexColor('#e0e0e0'))
-        c.line(x_margins - 5, y - 5, width - x_margins + 5, y - 5)
+        c.line(x_margins - 5, y - 5, x_margins - 5 + total_width, y - 5)
         c.setStrokeColor(black)
         
         # Move to next row (extra space if Vorgang exists)
