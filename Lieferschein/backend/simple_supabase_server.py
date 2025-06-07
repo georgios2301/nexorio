@@ -626,6 +626,52 @@ async def generate_pdf(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Debug endpoint to check document history table
+@app.get("/api/debug/document-history")
+async def debug_document_history():
+    """Debug endpoint to check document history table access"""
+    debug_info = {}
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            # Test 1: Basic table access
+            test_url = f"{SUPABASE_URL}/rest/v1/document_history?limit=1"
+            print(f"[DEBUG] Testing basic access: {test_url}")
+            
+            response = await client.get(test_url, headers=headers)
+            debug_info["basic_access"] = {
+                "status": response.status_code,
+                "data": response.json() if response.status_code == 200 else response.text
+            }
+            
+            # Test 2: Count records
+            count_url = f"{SUPABASE_URL}/rest/v1/document_history?select=*&limit=0"
+            count_response = await client.head(count_url, headers=headers)
+            if 'content-range' in count_response.headers:
+                debug_info["record_count"] = count_response.headers['content-range']
+            else:
+                debug_info["record_count"] = "No content-range header"
+            
+            # Test 3: Check if RLS might be blocking
+            # Try without any filters
+            all_url = f"{SUPABASE_URL}/rest/v1/document_history"
+            all_response = await client.get(all_url, headers=headers)
+            debug_info["all_records"] = {
+                "status": all_response.status_code,
+                "count": len(all_response.json()) if all_response.status_code == 200 else "N/A"
+            }
+            
+            # Test 4: Check table structure
+            # Get one record to see columns
+            if all_response.status_code == 200 and len(all_response.json()) > 0:
+                debug_info["sample_record"] = all_response.json()[0]
+            
+            return debug_info
+            
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
     uvicorn.run(app, host="0.0.0.0", port=port)
