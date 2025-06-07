@@ -460,6 +460,10 @@ def generate_laufkarte(data: Dict[str, Any]) -> str:
     print(f"=== LAUFKARTE GENERATION COMPLETE: {result} ===")
     return result
 
+def generate_laufkarte_OLD_DO_NOT_USE(data: Dict[str, Any]) -> str:
+    """OLD VERSION - DO NOT USE"""
+    raise Exception("This is the OLD Laufkarte generator. Use generate_laufkarte instead!")
+
 def generate_rechnung(data: Dict[str, Any]) -> str:
     """Generate Rechnung PDF"""
     template_path = os.path.join(os.path.dirname(__file__), 'rechnung_template.pdf')
