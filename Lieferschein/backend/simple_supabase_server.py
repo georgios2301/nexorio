@@ -112,6 +112,60 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
+@app.get("/api/debug/document-history")
+async def debug_document_history():
+    """Debug endpoint to check document_history table access"""
+    try:
+        async with httpx.AsyncClient() as client:
+            results = {}
+            
+            # Test 1: Try to access the table without any filters
+            print("Test 1: Basic table access")
+            url1 = f"{SUPABASE_URL}/rest/v1/document_history?select=*&limit=1"
+            response1 = await client.get(url1, headers=headers)
+            results["basic_access"] = {
+                "status": response1.status_code,
+                "data": response1.json() if response1.status_code == 200 else response1.text
+            }
+            
+            # Test 2: Count records
+            print("Test 2: Count records")
+            url2 = f"{SUPABASE_URL}/rest/v1/document_history?select=count"
+            count_headers = {**headers, "Prefer": "count=exact"}
+            response2 = await client.head(url2, headers=count_headers)
+            results["count"] = {
+                "status": response2.status_code,
+                "count": response2.headers.get("content-range", "unknown")
+            }
+            
+            # Test 3: Check if we're using service role key (which bypasses RLS)
+            results["key_type"] = "service_role" if "service_role" in SUPABASE_KEY else "anon"
+            results["key_prefix"] = SUPABASE_KEY[:20] + "..." if SUPABASE_KEY else "NO KEY"
+            
+            # Test 4: Try different table name variations
+            print("Test 3: Table name variations")
+            variations = ["document_history", "document-history", "documenthistory"]
+            for table_name in variations:
+                url = f"{SUPABASE_URL}/rest/v1/{table_name}?select=*&limit=1"
+                try:
+                    response = await client.get(url, headers=headers)
+                    results[f"table_{table_name}"] = {
+                        "exists": response.status_code in [200, 406],  # 406 means table exists but no acceptable content
+                        "status": response.status_code
+                    }
+                except:
+                    results[f"table_{table_name}"] = {"exists": False, "error": "exception"}
+            
+            return results
+            
+    except Exception as e:
+        return {
+            "error": str(e),
+            "supabase_url": SUPABASE_URL,
+            "has_key": bool(SUPABASE_KEY),
+            "key_length": len(SUPABASE_KEY) if SUPABASE_KEY else 0
+        }
+
 @app.get("/api/orders")
 async def get_orders():
     """Get all order numbers from the database"""
@@ -417,7 +471,19 @@ async def get_document_history(bestellnummer: Optional[str] = None):
             if bestellnummer:
                 url += f"&bestellnummer=eq.{bestellnummer}"
             
+            # Debug logging
+            print(f"Fetching document history from: {url}")
+            print(f"Using headers: apikey={headers['apikey'][:10]}...")
+            
             response = await client.get(url, headers=headers)
+            
+            # Debug response
+            print(f"Response status: {response.status_code}")
+            print(f"Response headers: {dict(response.headers)}")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"Response data: {data}")
+                print(f"Number of records: {len(data)}")
             
             if response.status_code != 200:
                 raise HTTPException(
@@ -429,6 +495,9 @@ async def get_document_history(bestellnummer: Optional[str] = None):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Exception in get_document_history: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/document-history/{history_id}")

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document History Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .debug-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        .result {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .success { border-color: #4caf50; }
+        .error { border-color: #f44336; }
+        h1, h2 { color: #4a90e2; }
+        .endpoint { 
+            background: #444; 
+            padding: 5px 10px; 
+            border-radius: 4px; 
+            font-family: monospace;
+            display: inline-block;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Document History Debug Tool</h1>
+    
+    <div class="debug-section">
+        <h2>1. Backend Connection Test</h2>
+        <p>Test if the backend server is running and accessible:</p>
+        <div>
+            <button onclick="testHealth('local')">Test Local Backend (localhost:8001)</button>
+            <button onclick="testHealth('render')">Test Render Backend</button>
+        </div>
+        <div id="healthResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>2. Document History API Test</h2>
+        <p>Test the document history endpoint:</p>
+        <div>
+            <button onclick="testHistory('local')">Test Local History API</button>
+            <button onclick="testHistory('render')">Test Render History API</button>
+        </div>
+        <div id="historyResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>3. Direct Supabase Test</h2>
+        <p>Test direct Supabase connection (requires SUPABASE_URL and SUPABASE_KEY):</p>
+        <div>
+            <input type="text" id="supabaseUrl" placeholder="Supabase URL" style="width: 400px; padding: 5px; margin: 5px;">
+            <input type="text" id="supabaseKey" placeholder="Supabase Key" style="width: 400px; padding: 5px; margin: 5px;">
+            <button onclick="testSupabase()">Test Direct Supabase</button>
+        </div>
+        <div id="supabaseResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>4. Frontend API Configuration</h2>
+        <p>Check what API URL the frontend is using:</p>
+        <button onclick="checkFrontendConfig()">Check Frontend Config</button>
+        <div id="configResult"></div>
+    </div>
+
+    <script>
+        const LOCAL_API = 'http://localhost:8001';
+        const RENDER_API = 'https://nexorio-backend.onrender.com';
+
+        async function testHealth(env) {
+            const apiBase = env === 'local' ? LOCAL_API : RENDER_API;
+            const resultDiv = document.getElementById('healthResult');
+            
+            resultDiv.innerHTML = `<div class="result">Testing ${apiBase}/health ...</div>`;
+            
+            try {
+                const response = await fetch(`${apiBase}/health`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        <strong>✓ Backend is running!</strong>
+                        <br>Endpoint: <span class="endpoint">${apiBase}/health</span>
+                        <br>Status: ${response.status}
+                        <br>Response: ${JSON.stringify(data, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Backend connection failed!</strong>
+                        <br>Endpoint: <span class="endpoint">${apiBase}/health</span>
+                        <br>Error: ${error.message}
+                        <br><br>Make sure the backend server is running:
+                        <br>cd Lieferschein/backend
+                        <br>python simple_supabase_server.py
+                    </div>
+                `;
+            }
+        }
+
+        async function testHistory(env) {
+            const apiBase = env === 'local' ? LOCAL_API : RENDER_API;
+            const resultDiv = document.getElementById('historyResult');
+            
+            resultDiv.innerHTML = `<div class="result">Testing ${apiBase}/api/document-history ...</div>`;
+            
+            try {
+                const response = await fetch(`${apiBase}/api/document-history`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>✓ Document History API works!</strong>
+                            <br>Endpoint: <span class="endpoint">${apiBase}/api/document-history</span>
+                            <br>Status: ${response.status}
+                            <br>Number of records: ${Array.isArray(data) ? data.length : 'Not an array'}
+                            <br><br>First 3 records:
+                            <br>${JSON.stringify(data.slice(0, 3), null, 2)}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>✗ API returned error!</strong>
+                            <br>Endpoint: <span class="endpoint">${apiBase}/api/document-history</span>
+                            <br>Status: ${response.status}
+                            <br>Error: ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ API request failed!</strong>
+                        <br>Endpoint: <span class="endpoint">${apiBase}/api/document-history</span>
+                        <br>Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            const resultDiv = document.getElementById('supabaseResult');
+            
+            if (!url || !key) {
+                resultDiv.innerHTML = `<div class="result error">Please enter both Supabase URL and Key</div>`;
+                return;
+            }
+            
+            resultDiv.innerHTML = `<div class="result">Testing direct Supabase connection...</div>`;
+            
+            try {
+                const response = await fetch(`${url}/rest/v1/document_history?select=*&order=generated_at.desc&limit=5`, {
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${key}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <strong>✓ Direct Supabase connection works!</strong>
+                            <br>Status: ${response.status}
+                            <br>Number of records: ${Array.isArray(data) ? data.length : 'Not an array'}
+                            <br><br>Data:
+                            <br>${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>✗ Supabase returned error!</strong>
+                            <br>Status: ${response.status}
+                            <br>Error: ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>✗ Supabase connection failed!</strong>
+                        <br>Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function checkFrontendConfig() {
+            const resultDiv = document.getElementById('configResult');
+            
+            // Try to load the index.html and extract API_BASE
+            resultDiv.innerHTML = `
+                <div class="result">
+                    <strong>Frontend API Configuration:</strong>
+                    <br><br>To check the API configuration in index.html:
+                    <br>1. Open index.html in your browser
+                    <br>2. Open Developer Tools (F12)
+                    <br>3. In the Console, type: <code>API_BASE</code>
+                    <br>4. It should show either:
+                    <br>   - <span class="endpoint">http://localhost:8001</span> (for local development)
+                    <br>   - <span class="endpoint">https://nexorio-backend.onrender.com</span> (for production)
+                    <br><br>If using local backend, make sure index.html has:
+                    <br><code>const API_BASE = 'http://localhost:8001';</code>
+                    <br><br>If using Render backend, it should have:
+                    <br><code>const API_BASE = 'https://nexorio-backend.onrender.com';</code>
+                </div>
+            `;
+        }
+
+        // Auto-test local backend on load
+        window.onload = () => {
+            testHealth('local');
+        };
+    </script>
+</body>
+</html>
