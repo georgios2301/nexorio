@@ -111,8 +111,11 @@ def create_unified_app():
 def main():
     """Main entry point"""
     port = int(os.getenv("PORT", 10000))
+    is_render = os.getenv("RENDER") == "true"
     
-    if os.getenv("RENDER"):
+    print(f"Environment check: RENDER={os.getenv('RENDER')}, is_render={is_render}, PORT={port}")
+    
+    if is_render:
         # On Render, run unified app on single port
         print(f"Starting unified service on Render (port {port})...")
         
@@ -168,7 +171,7 @@ def main():
         uvicorn.run(unified_app, host="0.0.0.0", port=port, log_level="info")
     else:
         # Local development - run services separately
-        print("Starting services for local development...")
+        print(f"Starting services for local development (RENDER env not 'true', got: {os.getenv('RENDER')})...")
         
         # Start backend in a thread
         backend_thread = threading.Thread(target=run_backend)
