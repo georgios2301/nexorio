@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import httpx
@@ -14,9 +14,15 @@ import shutil
 from pathlib import Path
 import io
 import tempfile
+import sys
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+
+# Add paths for PDF generation imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '../Programm'))
 
 # Supabase configuration - MUST be set as environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -460,6 +466,70 @@ async def delete_document_history(history_id: int):
     except HTTPException:
         raise
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# PDF Generation endpoint
+@app.post("/generate-pdf")
+async def generate_pdf(request: Request):
+    """Generate PDF based on document type"""
+    try:
+        # Try to import PDF generation functions
+        try:
+            # Production - files in root
+            from lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
+            from lieferschein_counter import get_current_number
+        except ImportError:
+            try:
+                # Development - files in Vorlagen
+                from Vorlagen.lieferschein_generator import generate_lieferschein, generate_laufkarte, generate_rechnung
+                from Vorlagen.lieferschein_counter import get_current_number
+            except ImportError as e:
+                print(f"Failed to import PDF generation modules: {e}")
+                raise HTTPException(status_code=500, detail="PDF generation modules not available")
+        
+        # Parse request body
+        body = await request.body()
+        data = json.loads(body)
+        doc_type = data.get('docType')
+        doc_data = data.get('data', {})
+        
+        if not doc_type:
+            raise HTTPException(status_code=400, detail="docType is required")
+        
+        # Generate PDF based on type
+        document_number = None
+        if doc_type == 'lieferschein':
+            pdf_path = generate_lieferschein(doc_data)
+            document_number = f"DZ{datetime.now().year}-{get_current_number():04d}"
+        elif doc_type == 'laufkarte':
+            pdf_path = generate_laufkarte(doc_data)
+            document_number = doc_data.get('bestellnummer', '')
+        elif doc_type == 'rechnung':
+            pdf_path = generate_rechnung(doc_data)
+            document_number = f"RE-{doc_data.get('bestellnummer', '')}"
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown docType: {doc_type}")
+        
+        # Read the PDF file
+        with open(pdf_path, 'rb') as pdf_file:
+            pdf_content = pdf_file.read()
+        
+        # Return PDF as response
+        return StreamingResponse(
+            io.BytesIO(pdf_content),
+            media_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{doc_type}_{doc_data.get("bestellnummer", "unknown")}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating PDF: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
