@@ -62,9 +62,16 @@ def create_unified_app():
     # Create a new FastAPI app that combines both services
     app = FastAPI(title="DZMetall Unified Service")
     
-    # Mount the backend app
+    # Import the backend routes directly
+    from simple_supabase_server import app as backend_app
+    
+    # Add health check at root level
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "service": "unified-server"}
+    
+    # Mount the backend app only for /api routes
     app.mount("/api", backend_app)
-    app.mount("/health", backend_app)
     
     # Create a wrapper for PDF generation
     @app.post("/generate-pdf")
@@ -102,12 +109,42 @@ def main():
         print(f"Starting unified service on Render (port {port})...")
         
         # Import here to avoid circular imports
-        from fastapi import FastAPI
+        import uvicorn
+        from fastapi import FastAPI, Request, Response
         from fastapi.middleware.cors import CORSMiddleware
+        from fastapi.responses import StreamingResponse
         from simple_supabase_server import app as backend_app
+        from pdf_server import app as pdf_app
+        from werkzeug.test import Client
+        import io
         
-        # Create unified app
-        unified_app = create_unified_app()
+        # Create unified app directly here
+        unified_app = FastAPI(title="DZMetall Unified Service")
+        
+        # Add health endpoint
+        @unified_app.get("/health")
+        async def health():
+            return {"status": "healthy", "service": "unified-server"}
+        
+        # Mount backend for API routes
+        unified_app.mount("/api", backend_app)
+        
+        # Add PDF generation endpoint
+        @unified_app.post("/generate-pdf")
+        async def generate_pdf(request: Request):
+            body = await request.body()
+            client = Client(pdf_app, Response)
+            response = client.post(
+                '/generate-pdf',
+                data=body,
+                content_type='application/json',
+                headers=dict(request.headers)
+            )
+            return StreamingResponse(
+                io.BytesIO(response.get_data()),
+                media_type=response.content_type,
+                headers=dict(response.headers)
+            )
         
         # Add CORS middleware
         unified_app.add_middleware(
