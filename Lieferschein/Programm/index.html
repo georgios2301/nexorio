@@ -699,8 +699,14 @@
 
     <script>
         // API configuration
-        const API_BASE = 'http://localhost:8001';
-        const PDF_API_BASE = 'http://localhost:4000';
+        // Dynamic API URLs based on environment
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const API_BASE = isProduction 
+            ? `${window.location.protocol}//${window.location.hostname}`
+            : 'http://localhost:8001';
+        const PDF_API_BASE = isProduction 
+            ? `${window.location.protocol}//${window.location.hostname}`
+            : 'http://localhost:4000';
         
         // State
         let currentOrder = null;
