@@ -32,6 +32,13 @@ mkdir -p Lieferschein/Vorlagen
 
 # Copy files from the repository structure
 echo "Copying application files..."
+
+# Copy start_services.py first (main entry point)
+if [ -f "start_services.py" ]; then
+    cp start_services.py .
+    echo "Copied start_services.py"
+fi
+
 # Backend files
 if [ -f "Lieferschein/backend/simple_supabase_server.py" ]; then
     cp Lieferschein/backend/simple_supabase_server.py .
