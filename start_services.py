@@ -15,6 +15,14 @@ from multiprocessing import Process
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Add Lieferschein directories to path for imports
+lieferschein_backend = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Lieferschein', 'backend')
+lieferschein_programm = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Lieferschein', 'Programm')
+if os.path.exists(lieferschein_backend):
+    sys.path.insert(0, lieferschein_backend)
+if os.path.exists(lieferschein_programm):
+    sys.path.insert(0, lieferschein_programm)
+
 def run_backend():
     """Run the FastAPI backend server"""
     import uvicorn
